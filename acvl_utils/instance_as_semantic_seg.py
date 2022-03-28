@@ -128,7 +128,7 @@ def postprocess_instance_segmentation(instance_segmentation: np.ndarray):
         slicer = bounding_box_to_slice(bbox)
 
         cropped_instance = instance_segmentation[slicer]
-        instance_mask = cropped_instance == instance_id
+        instance_mask = instance_mask[slicer]
 
         # let's see if this instance is fragmented
         labeled_cropped_instance, fragment_sizes = label_with_component_sizes(instance_mask, connectivity=1)
@@ -139,7 +139,7 @@ def postprocess_instance_segmentation(instance_segmentation: np.ndarray):
                 if fragment_sizes[f] == max_fragment_size: continue
                 fragment_mask = labeled_cropped_instance == f
                 neighbor_mask = binary_dilation(fragment_mask, strel) != fragment_mask
-                fragment_neighbors = instance_segmentation[slicer][neighbor_mask]
+                fragment_neighbors = cropped_instance[neighbor_mask]
                 # remove background
                 fragment_neighbors = fragment_neighbors[fragment_neighbors != 0]
                 if len(fragment_neighbors) > 0:
