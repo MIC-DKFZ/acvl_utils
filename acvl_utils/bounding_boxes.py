@@ -27,6 +27,14 @@ def pad_bbox(bounding_box: Union[List[List[int]], Tuple[Tuple[int, int]]], pad_a
     return bounding_box
 
 
+def regionprops_bbox_to_proper_bbox(regionprops_bbox: Tuple[int, ...]) -> List[List[int]]:
+    """
+    regionprops_bbox is what you get from `from skimage.measure import regionprops`
+    """
+    dim = len(regionprops_bbox) // 2
+    return [[regionprops_bbox[i], regionprops_bbox[i + dim]] for i in range(dim)]
+
+
 def bounding_box_to_slice(bounding_box: List[List[int]]):
     return tuple([slice(*i) for i in bounding_box])
 

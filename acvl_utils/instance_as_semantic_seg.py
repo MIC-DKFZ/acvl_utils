@@ -9,6 +9,7 @@ from skimage.measure import regionprops
 from skimage.morphology import ball, erosion, binary_dilation
 from skimage.morphology import binary_erosion
 from skimage.morphology import dilation
+from acvl_utils.bounding_boxes import regionprops_bbox_to_proper_bbox
 
 BORDER_LABEL = 1
 CENTER_LABEL = 2
@@ -171,7 +172,7 @@ def convert_instanceseg_to_semantic_patched(instance_segmentation: np.ndarray, s
     pad_amount = 0  # testing purposes only, erosion should not need padding
     instance_properties = regionprops(instance_segmentation)
     for ip in instance_properties:
-        bbox = ip['bbox']
+        bbox = regionprops_bbox_to_proper_bbox(ip['bbox'])
         if pad_amount != 0:
             bbox = pad_bbox(bbox, pad_amount, instance_segmentation.shape)
         slicer = bounding_box_to_slice(bbox)
@@ -204,7 +205,7 @@ def convert_instanceseg_to_semantic_patched_mp(instance_segmentation: np.ndarray
     results = []
     slicers = []
     for ip in instance_properties:
-        bbox = ip['bbox']
+        bbox = regionprops_bbox_to_proper_bbox(ip['bbox'])
         if pad_amount != 0:
             bbox = pad_bbox(bbox, pad_amount, instance_segmentation.shape)
         slicer = bounding_box_to_slice(bbox)
