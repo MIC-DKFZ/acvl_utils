@@ -15,8 +15,8 @@ from skimage.morphology import binary_erosion
 from skimage.morphology import dilation
 from acvl_utils.bounding_boxes import regionprops_bbox_to_proper_bbox
 
-BORDER_LABEL = 1
-CENTER_LABEL = 2
+BORDER_LABEL = 2
+CENTER_LABEL = 1
 
 
 def _internal_convert_semantic_to_instance_mp(cropped_core_instances, cropped_border, spacing):
