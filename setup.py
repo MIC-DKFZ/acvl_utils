@@ -10,5 +10,7 @@ setup(name='acvl_utils',
       license='Apache License Version 2.0, January 2004',
       install_requires=[
           "numpy",
+          "batchgenerators",
+          "SimpleITK"
       ],
       )
