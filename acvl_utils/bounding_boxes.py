@@ -96,7 +96,6 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
     return [[i, j] for i, j in zip(mins, maxs)]
 
 
-
 if __name__ == '__main__':
     bbox = [[32, 64], [21, 46]]
     bbox_padded = pad_bbox(bbox, 3)
