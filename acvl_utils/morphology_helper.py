@@ -12,7 +12,7 @@ def generate_ball(radius: Union[Tuple, List], spacing: Union[Tuple, List] = (1, 
     If you use spacing, both radius and spacing will be interpreted relative to each other, so a radius of 10 with a
     spacing of 5 will result in a ball with radius 2 pixels.
     """
-    radius_in_voxels = np.round(radius / np.array(spacing)).astype(int)
+    radius_in_voxels = np.array([round(i) for i in radius / np.array(spacing)])
     n = 2 * radius_in_voxels + 1
     ball_iso = ball(max(n) * 2, dtype=np.float64)
     ball_resampled = resize(ball_iso, n, 1, 'constant', 0, clip=True, anti_aliasing=False, preserve_range=True)

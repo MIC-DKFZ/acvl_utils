@@ -78,8 +78,12 @@ def _load_sitk(file: str):
     return sitk.GetArrayFromImage(sitk.ReadImage(file))
 
 
+def _load_npz_nnunet(file: str):
+    return np.load(file)['data']
+
+
 if __name__ == '__main__':
-    base = '/home/isensee/data/nnUNet_preprocessed/Task168_ShankTeethInstanceSeg'
-    test_all_images_in_folders_same_mp(join(base, 'gt_segmentations'), join(base, 'gt_segmentations_patched'),
-                                       _load_sitk, suffix='.nii.gz',
+    base = './'
+    test_all_images_in_folders_same_mp(join(base, 'nnUNetData_plans_v2.1_trgSp_05x05x05_stage0'), join(base, 'nnUNetData_plans_v2.1_trgSp_05x05x05_stage0_patched/'),
+                                       _load_npz_nnunet, suffix='.npz',
                                        num_processes=8, verbose=False, strict=True)
