@@ -52,6 +52,10 @@ def convert_semantic_to_instanceseg_mp(arr: np.ndarray,
                                        isolated_border_as_separate_instance_threshold: int = 15,
                                        num_processes: int = 8) -> np.ndarray:
     """
+    This function runs multiprocessing within one image. This is only useful for when you have one (or very few)
+    very large images. For all other use cases you get much more throughput by parallelizing on a per image level
+    (use multiprocessing pool to parallelize calls to convert_semantic_to_instanceseg)
+
     :param arr:
     :param spacing:
     :param small_center_threshold: volume, as dictated by spacing! If your spacing is (2, 2, 2) then a
@@ -264,6 +268,10 @@ def postprocess_instance_segmentation_mp(instance_segmentation: np.ndarray, num_
     rather than real. This function can fix this by merging all but the largest connected component of each fragment
     with the nearest neighboring instances.
 
+    This function runs multiprocessing within one image. This is only useful for when you have one (or very few)
+    very large images. For all other use cases you get much more throughput by parallelizing on a per image level
+    (use multiprocessing pool to parallelize calls to postprocess_instance_segmentation)
+
     :param instance_segmentation:
     :return:
     """
@@ -399,6 +407,17 @@ def convert_instanceseg_to_semantic_patched_mp(instance_segmentation: np.ndarray
                                                spacing: Union[Tuple, List] = (1, 1, 1),
                                                border_thickness: float = 2,
                                                num_processes: int = 8) -> np.ndarray:
+    """
+    This function runs multiprocessing within one image. This is only useful for when you have one (or very few)
+    very large images. For all other use cases you get much more throughput by parallelizing on a per image level
+    (use multiprocessing pool to parallelize calls to convert_instanceseg_to_semantic_patched)
+
+    :param instance_segmentation:
+    :param spacing:
+    :param border_thickness:
+    :param num_processes:
+    :return:
+    """
     assert np.issubdtype(instance_segmentation.dtype,
                          np.unsignedinteger), 'instance_segmentation must be an array of type unsigned ' \
                                               'integer (can be uint8, uint16 etc)'
