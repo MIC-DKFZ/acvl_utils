@@ -512,7 +512,7 @@ def main_sem_to_instance():
                                                             num_processes=8)
     print(f'convert_semantic_to_instanceseg_mp: {time() - start} s')
     start = time()
-    instseg_patched_postprocessed_mp = postprocess_instance_segmentation_mp(instseg_patched, num_processes=8)
+    instseg_patched_postprocessed_mp = postprocess_instance_segmentation_mp(instseg_patched_mp, num_processes=8)
     print(f'postprocess_instance_segmentation_mp: {time() - start} s')
     instseg_itk = sitk.GetImageFromArray(instseg_patched_postprocessed_mp)
     instseg_itk.CopyInformation(source_file_itk)
