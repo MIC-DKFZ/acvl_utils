@@ -49,7 +49,7 @@ def _internal_convert_semantic_to_instance_mp(cropped_core_instances, cropped_bo
 def convert_semantic_to_instanceseg_mp(arr: np.ndarray,
                                        spacing: Union[Tuple[float, ...], List[float]] = (1, 1, 1),
                                        small_center_threshold: float = 30,
-                                       isolated_border_as_separate_instance_threshold: int = 15,
+                                       isolated_border_as_separate_instance_threshold: float = 15,
                                        num_processes: int = 8) -> np.ndarray:
     """
     This function runs multiprocessing within one image. This is only useful for when you have one (or very few)
@@ -143,7 +143,7 @@ def convert_semantic_to_instanceseg_mp(arr: np.ndarray,
 def convert_semantic_to_instanceseg(arr: np.ndarray,
                                     spacing: Union[Tuple[float, ...], List[float]] = (1, 1, 1),
                                     small_center_threshold: float = 30,
-                                    isolated_border_as_separate_instance_threshold: int = 15) -> np.ndarray:
+                                    isolated_border_as_separate_instance_threshold: float = 15) -> np.ndarray:
     """
     :param arr:
     :param spacing:
