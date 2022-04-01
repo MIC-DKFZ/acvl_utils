@@ -11,6 +11,7 @@ setup(name='acvl_utils',
       install_requires=[
           "numpy",
           "batchgenerators",
+          "torch",
           "SimpleITK"
       ],
       )
