@@ -3,8 +3,6 @@ from multiprocessing import Pool
 from typing import Union, Tuple, List
 
 import numpy as np
-from particle_seg.conversion.border_semantic2instance import border_semantic2instance_patchify, border_semantic2instance
-from particle_seg.helper.utils import load_nifti
 
 from acvl_utils.bounding_boxes import pad_bbox, bounding_box_to_slice, get_bbox_from_mask_npwhere
 from acvl_utils.morphology_helper import generate_ball, label_with_component_sizes
@@ -515,48 +513,5 @@ def main_sem_to_instance():
     sitk.WriteImage(instseg_itk, target_patched_mp)
 
 
-def main_sem_to_instance_kemi():
-    source_file = '/home/fabian/Downloads/Kemi850_35mm_00002.nii.gz'
-    target_patched = '/home/fabian/Downloads/Kemi850_35mm_00002_patched_inst.nii.gz'
-    import SimpleITK as sitk
-    source_file_itk = sitk.ReadImage(source_file)
-    spacing = list(source_file_itk.GetSpacing())[::-1]
-    source_npy = sitk.GetArrayFromImage(source_file_itk)
-
-    start = time()
-    instseg_patched = convert_semantic_to_instanceseg(source_npy, spacing, small_center_threshold=0.03,
-                                                      isolated_border_as_separate_instance_threshold=0.015)
-    print(f'convert_semantic_to_instanceseg: {time() - start} s')
-    start = time()
-    instseg_patched_postprocessed = postprocess_instance_segmentation(instseg_patched)
-    print(f'postprocess_instance_segmentation: {time() - start} s')
-    instseg_itk = sitk.GetImageFromArray(instseg_patched_postprocessed)
-    instseg_itk.CopyInformation(source_file_itk)
-    sitk.WriteImage(instseg_itk, target_patched)
-
-    # start = time()
-    # instseg_patched = border_semantic2instance_patchify(source_file,
-    #                                                     '/home/fabian/Downloads/Kemi850_35mm_00002_patched_inst_karol.nii.gz',
-    #                                                     small_center_threshold=30,
-    #                                                     isolated_border_as_separate_instance_threshold=15)
-    # print(f'border_semantic2instance_patchify: {time() - start} s')
-    # start = time()
-    # instseg_patched = border_semantic2instance(source_npy,
-    #                                            spacing=spacing,
-    #                                                 small_center_threshold=30,
-    #                                                 isolated_border_as_separate_instance_threshold=15)
-    # print(f'border_semantic2instance: {time() - start} s')
-
-    karol = load_nifti('/home/fabian/Downloads/Kemi850_35mm_00002_patched_inst_karol.nii.gz')
-    mine = load_nifti(target_patched)
-    print(np.sum((mine != 0) != (karol != 0)))
-    print(label(karol, return_num=True)[1], label(mine, return_num=True)[1])
-    for region in range(1, 88):
-        mask_mine = mine == region
-        region_karol = np.unique(karol[mask_mine])
-        if len(region_karol) > 1:
-            print(region, region_karol)
-
-
 if __name__ == '__main__':
-    main_sem_to_instance_kemi()
+    main_instance_to_sem()
