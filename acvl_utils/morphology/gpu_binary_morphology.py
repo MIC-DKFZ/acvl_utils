@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from torch import nn
 from dynamic_network_architectures.building_blocks.helper import convert_dim_to_conv_op
-from acvl_utils.morphology_helper import generate_ball
+from acvl_utils.morphology.morphology_helper import generate_ball
 from torch.backends import cudnn
 
 

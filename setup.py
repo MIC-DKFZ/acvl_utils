@@ -12,6 +12,7 @@ setup(name='acvl_utils',
           "numpy",
           "batchgenerators",
           "torch",
-          "SimpleITK"
+          "SimpleITK",
+          "scikit-image"
       ],
       )

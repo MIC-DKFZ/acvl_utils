@@ -2,7 +2,7 @@ import unittest
 from typing import List, Union, Tuple
 
 import numpy as np
-from acvl_utils.padding import pad_nd_image
+from acvl_utils.cropping_and_padding.padding import pad_nd_image
 import torch
 
 
