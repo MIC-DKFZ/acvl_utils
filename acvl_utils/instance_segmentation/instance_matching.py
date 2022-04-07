@@ -10,7 +10,7 @@ def match_instances_dice(instances_gt: np.ndarray, instances_pred: np.ndarray, d
     """
     Takes a predicted and a ground truth instance maps and matches the instances between them via their Dice overlap.
     This is implemented by first computing the pair-wise Dice between all gt-pred instance combinations. Then, we
-    iteratively take the pair with the highest Dice overlap and remove it from the set. If consume_instances=True,
+    iteratively take the pair with the highest Dice overlap and remove it from the set. If consume_instances=False,
     gt instances can be matched with multiple predicted instances and vice versa (Not recommended).
 
     This function returns a List of Tuples. Each entry in the list is a match, each match is represented as a tuple.
