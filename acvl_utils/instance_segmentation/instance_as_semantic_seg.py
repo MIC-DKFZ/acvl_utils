@@ -4,14 +4,14 @@ from typing import Union, Tuple, List
 
 import numpy as np
 
-from acvl_utils.bounding_boxes import pad_bbox, bounding_box_to_slice, get_bbox_from_mask_npwhere
-from acvl_utils.morphology_helper import generate_ball, label_with_component_sizes
+from acvl_utils.cropping_and_padding.bounding_boxes import pad_bbox, bounding_box_to_slice
+from acvl_utils.morphology.morphology_helper import generate_ball, label_with_component_sizes
 from skimage.measure import label
 from skimage.measure import regionprops
 from skimage.morphology import ball, erosion, binary_dilation
 from skimage.morphology import binary_erosion
 from skimage.morphology import dilation
-from acvl_utils.bounding_boxes import regionprops_bbox_to_proper_bbox
+from acvl_utils.cropping_and_padding.bounding_boxes import regionprops_bbox_to_proper_bbox
 
 BORDER_LABEL = 2
 CENTER_LABEL = 1
