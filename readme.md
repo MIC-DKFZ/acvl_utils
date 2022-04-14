@@ -9,7 +9,7 @@ This repository contains functions / algorithms that the ACVL group uses frequen
    - To improve an existing feature: improv_"feature name" (e.g. improv_sampler)
 2. Commit your changes
 3. Create a pull request
-   - Assign at least one reviewer to the pull request
+   - Assign at least one reviewer to the pull request. Do not always assign Fabian!
 
 ## How to review a pull request
 - Check the feature documentation
@@ -29,3 +29,7 @@ This repository contains functions / algorithms that the ACVL group uses frequen
 - Check the tests
   - Do all tests run?
   - Are most feature cases covered?
+
+
+## How to merge
+- Please check both boxes: `squash commits` AND `delete source branch`. Otherwise we will accumulate a million branches over time
