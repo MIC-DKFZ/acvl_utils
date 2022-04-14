@@ -13,6 +13,7 @@ setup(name='acvl_utils',
           "batchgenerators",
           "torch",
           "SimpleITK",
-          "scikit-image"
+          "scikit-image",
+          "connected-components-3d"
       ],
       )
