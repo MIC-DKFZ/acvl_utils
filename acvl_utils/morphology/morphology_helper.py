@@ -30,28 +30,27 @@ def label_with_component_sizes(binary_image: np.ndarray, connectivity: int = Non
     return labeled_image, component_sizes
 
 
-def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int = None,
-                                     background_label: int = 0) -> np.ndarray:
+def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int = None) -> np.ndarray:
     """
     Removes all but the largest component in binary_image. Replaces pixels that don't belong to it with background_label
     """
-    filter_fn = lambda x, y: [i for i, j in zip(x, y) if y != max(y)]
-    return generic_filter_components(binary_image, filter_fn, connectivity, background_label)
+    filter_fn = lambda x, y: [i for i, j in zip(x, y) if j == max(y)]
+    return generic_filter_components(binary_image, filter_fn, connectivity)
 
 
 def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[List[int], List[int]], List[int]],
-                              connectivity: int = None,
-                              background_label: int = 0):
+                              connectivity: int = None):
     """
-    filter_fn MUST return the component ids that should be REMOVED!
+    filter_fn MUST return the component ids that should be KEPT!
     filter_fn will be called as: filter_fn(component_ids, component_sizes) and is expected to return a List of int
+
+    returns a binary array that is True where the filtered components are
     """
     labeled_image, component_sizes = label_with_component_sizes(binary_image, connectivity)
     component_ids = list(component_sizes.keys())
     component_sizes = list(component_sizes.values())
-    remove = filter_fn(component_ids, component_sizes)
-    labeled_image[np.in1d(labeled_image.ravel(), remove).reshape(labeled_image.shape)] = background_label
-    return labeled_image
+    keep = filter_fn(component_ids, component_sizes)
+    return np.in1d(labeled_image.ravel(), keep).reshape(labeled_image.shape)
 
 
 def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, threshold_type: str = 'min',
