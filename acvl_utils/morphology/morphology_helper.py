@@ -22,12 +22,23 @@ def generate_ball(radius: Union[Tuple, List], spacing: Union[Tuple, List] = (1, 
     return ball_resampled.astype(dtype)
 
 
-def label_with_component_sizes(binary_image: np.ndarray, connectivity=None):
+def label_with_component_sizes(binary_image: np.ndarray, connectivity: int = None) -> Tuple[np.ndarray, dict]:
     if not binary_image.dtype == bool:
         print('Warning: it would be way faster if your binary image had dtype bool')
     labeled_image, num_components = label(binary_image, return_num=True, connectivity=connectivity)
     component_sizes = {i + 1: j for i, j in enumerate(np.bincount(labeled_image.ravel())[1:])}
     return labeled_image, component_sizes
+
+
+def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int = None, background_label: int = 0) -> np.ndarray:
+    labeled_image, component_sizes = label_with_component_sizes(binary_image, connectivity)
+    max_component_size = max(component_sizes.values())
+    remove = [i for i, j in component_sizes.items() if j != max_component_size]
+    if len(component_sizes) - len(remove) > 1:
+        print(f'WARNING: No unique largerst component! There are {len(component_sizes) - len(remove)} components '
+              f'with size {max_component_size}. Keeping all of them')
+    labeled_image[np.in1d(labeled_image.ravel(), remove).reshape(labeled_image.shape)] = background_label
+    return labeled_image
 
 
 def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, threshold_type: str = 'min',
@@ -43,7 +54,8 @@ def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, t
         threshold_size_in_pixels: the threshold number of pixels/voxels of components to determine them as small / large
         threshold_type: 'min' means threshold_size_in_pixels defines minimal number of pixels -> removes small components
                         'max' means threshold_size_in_pixels defines maximal number of pixels -> removes large components
-        connectivity: Maximum number of orthogonal hops to consider a pixel/voxel as a neighbor. Accepted values are ranging from 1 to input.ndim. If None, a full connectivity of input.ndim is used.
+        connectivity: Maximum number of orthogonal hops to consider a pixel/voxel as a neighbor. Accepted values are
+                      ranging from 1 to input.ndim. If None, a full connectivity of input.ndim is used.
         verbose: if True, prints number of removed components
     returns:
         binary image with removed components
