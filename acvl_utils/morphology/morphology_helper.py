@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Callable
 
 import numpy as np
 from skimage.measure import label
@@ -30,20 +30,32 @@ def label_with_component_sizes(binary_image: np.ndarray, connectivity: int = Non
     return labeled_image, component_sizes
 
 
-def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int = None, background_label: int = 0) -> np.ndarray:
+def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int = None,
+                                     background_label: int = 0) -> np.ndarray:
+    """
+    Removes all but the largest component in binary_image. Replaces pixels that don't belong to it with background_label
+    """
+    filter_fn = lambda x, y: [i for i, j in zip(x, y) if y != max(y)]
+    return generic_filter_components(binary_image, filter_fn, connectivity, background_label)
+
+
+def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[List[int], List[int]], List[int]],
+                              connectivity: int = None,
+                              background_label: int = 0):
+    """
+    filter_fn MUST return the component ids that should be REMOVED!
+    filter_fn will be called as: filter_fn(component_ids, component_sizes) and is expected to return a List of int
+    """
     labeled_image, component_sizes = label_with_component_sizes(binary_image, connectivity)
-    max_component_size = max(component_sizes.values())
-    remove = [i for i, j in component_sizes.items() if j != max_component_size]
-    if len(component_sizes) - len(remove) > 1:
-        print(f'WARNING: No unique largerst component! There are {len(component_sizes) - len(remove)} components '
-              f'with size {max_component_size}. Keeping all of them')
+    component_ids = list(component_sizes.keys())
+    component_sizes = list(component_sizes.values())
+    remove = filter_fn(component_ids, component_sizes)
     labeled_image[np.in1d(labeled_image.ravel(), remove).reshape(labeled_image.shape)] = background_label
     return labeled_image
 
 
 def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, threshold_type: str = 'min',
                       connectivity=None, verbose: bool = False):
-
     """
     This function removes either large or small components in a binary image, depending on the threshold_size_in_pixels.
     It is based on skimage's connected component labeling.
@@ -81,7 +93,6 @@ def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, t
 
 def remove_components_cc3d(binary_image: np.ndarray, threshold_size_in_pixels: int, threshold_type: str = 'min',
                            connectivity=26, verbose: bool = False):
-
     """
     This function removes either large or small components in a binary image, depending on the threshold_size_in_pixels.
     It has a similar functionality as the skimage version remove_components but it uses connected-components-3d (https://github.com/seung-lab/connected-components-3d/) instead.
