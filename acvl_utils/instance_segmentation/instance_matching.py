@@ -46,14 +46,17 @@ def match_instances_dice(instances_gt: np.ndarray, instances_pred: np.ndarray, d
     for i in range(len(instance_ids_gt)):
         instance_label = instance_ids_gt[i]
         mask_gt = gt_pixels == instance_label
+        # we only need to check the dice for instance_ids_pred where there is any overlap with mask_gt
+        instance_ids_pred_with_overlap = [i for i in np.unique(pred_pixels[mask_gt]) if i != 0]
         for j in range(len(instance_ids_pred)):
             instance_label_pred = instance_ids_pred[j]
-            mask_pred = pred_pixels == instance_label_pred
-            tp = np.sum(mask_gt & mask_pred)
-            fp = np.sum((~mask_gt) & mask_pred)
-            fn = np.sum(mask_gt & (~mask_pred))
-            dc = 2 * tp / np.clip(2 * tp + fp + fn, a_min=1e-8, a_max=np.inf)
-            dice_matrix[i, j] = dc
+            if instance_label_pred in instance_ids_pred_with_overlap:
+                mask_pred = pred_pixels == instance_label_pred
+                tp = np.sum(mask_gt & mask_pred)
+                fp = np.sum((~mask_gt) & mask_pred)
+                fn = np.sum(mask_gt & (~mask_pred))
+                dc = 2 * tp / np.clip(2 * tp + fp + fn, a_min=1e-8, a_max=np.inf)
+                dice_matrix[i, j] = dc
 
     remaining_gt = deepcopy(instance_ids_gt)
     remaining_pred = deepcopy(instance_ids_pred)
