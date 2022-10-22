@@ -33,3 +33,19 @@ This repository contains functions / algorithms that the ACVL group uses frequen
 
 ## How to merge
 - Please check both boxes: `squash commits` AND `delete source branch`. Otherwise we will accumulate a million branches over time
+
+
+## Packages
+
+### Array manipulation
+
+#### Slicer:
+A dynamic N-dimensional array slicer that returns a tuple that can be used for slicing an N-dimensional array. Works exactly as Python and Numpy slicing, only with different syntax.
+The conventional slicing method has the drawback that one must know the dimensionality of the array beforehand. By contrast, this slicer can be adapted dynamically at runtime.
+
+
+### Miscellaneous
+
+#### Imap tqdm:
+Run a function in parallel with a tqdm progress bar and an arbitrary number of arguments.
+Results are always ordered and the performance should be the same as of Pool.map.
