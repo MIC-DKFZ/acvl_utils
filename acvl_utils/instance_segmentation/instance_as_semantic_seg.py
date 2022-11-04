@@ -21,6 +21,7 @@ def _internal_convert_semantic_to_instance_mp(cropped_core_instances, cropped_bo
     cropped_current = np.copy(cropped_core_instances)
     already_dilated_mm = np.array((0, 0, 0))
     cropped_final = np.copy(cropped_core_instances)
+    background_mask = (cropped_border == 0) & (cropped_core_instances == 0)
     while np.sum(cropped_border) > 0:
         strel_size = [0, 0, 0]
         maximum_dilation = max(already_dilated_mm)
@@ -38,6 +39,7 @@ def _internal_convert_semantic_to_instance_mp(cropped_core_instances, cropped_bo
 
         # print(1)
         dilated = dilation(cropped_current, ball_here)
+        dilated[background_mask] = 0
         diff = (cropped_current == 0) & (dilated != cropped_current)
         cropped_final[diff & cropped_border] = dilated[diff & cropped_border]
         cropped_border[diff] = 0
@@ -224,6 +226,7 @@ def convert_semantic_to_instanceseg(arr: np.ndarray,
 
                 # print(1)
                 dilated = dilation(cropped_current, ball_here)
+                dilated[~cropped_mask] = 0
                 diff = (cropped_current == 0) & (dilated != cropped_current)
                 cropped_final[diff & cropped_border] = dilated[diff & cropped_border]
                 cropped_border[diff] = 0
@@ -446,10 +449,10 @@ def convert_instanceseg_to_semantic_patched_mp(instance_segmentation: np.ndarray
 
 
 def main_instance_to_sem():
-    source_file = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee.nii.gz'
-    target_normal = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee_normal.nii.gz'
-    target_patched = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee_patched.nii.gz'
-    target_patched_mp = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee_patched_mp.nii.gz'
+    source_file = '/media/isensee/data_stick/Task162_ShankTeeth/labelsTr/aarika-drunk-chimpanzee.nii.gz'
+    target_normal = '/home/isensee/temp/aarika-drunk-chimpanzee_normal.nii.gz'
+    target_patched = '/home/isensee/temp/aarika-drunk-chimpanzee_patched.nii.gz'
+    target_patched_mp = '/home/isensee/temp/aarika-drunk-chimpanzee_patched_mp.nii.gz'
     import SimpleITK as sitk
     source_file_itk = sitk.ReadImage(source_file)
     spacing = list(source_file_itk.GetSpacing())[::-1]
@@ -480,9 +483,9 @@ def main_instance_to_sem():
 
 
 def main_sem_to_instance():
-    source_file = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee_patched.nii.gz'
-    target_patched = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee_patched_inst.nii.gz'
-    target_patched_mp = '/home/fabian/temp/deleteme/aarika-drunk-chimpanzee_patched_inst_mp.nii.gz'
+    source_file = '/home/isensee/temp/aarika-drunk-chimpanzee_patched.nii.gz'
+    target_patched = '/home/isensee/temp/aarika-drunk-chimpanzee_patched_inst.nii.gz'
+    target_patched_mp = '/home/isensee/temp/aarika-drunk-chimpanzee_patched_inst_mp.nii.gz'
     import SimpleITK as sitk
     source_file_itk = sitk.ReadImage(source_file)
     spacing = list(source_file_itk.GetSpacing())[::-1]
@@ -514,4 +517,4 @@ def main_sem_to_instance():
 
 
 if __name__ == '__main__':
-    main_instance_to_sem()
+    main_sem_to_instance()
