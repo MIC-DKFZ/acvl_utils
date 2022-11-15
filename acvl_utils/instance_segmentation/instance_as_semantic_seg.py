@@ -376,7 +376,7 @@ def convert_instanceseg_to_semantic_patched(instance_segmentation: np.ndarray, s
                                               'integer (can be uint8, uint16 etc)'
     border_semantic = np.zeros_like(instance_segmentation, dtype=np.uint8)
     selem = generate_ball([border_thickness] * 3, spacing)
-    pad_amount = 0  # testing purposes only, erosion should not need padding
+    pad_amount = 1  # testing purposes only, erosion should not need padding
     instance_properties = regionprops(instance_segmentation)
     for ip in instance_properties:
         bbox = regionprops_bbox_to_proper_bbox(ip['bbox'])
