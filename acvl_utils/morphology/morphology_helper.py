@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List, Callable
+from typing import Union, Tuple, List, Callable, Sequence
 
 import numpy as np
 from skimage.measure import label
@@ -17,8 +17,7 @@ def generate_ball(radius: Union[Tuple, List], spacing: Union[Tuple, List] = (1, 
     n = 2 * radius_in_voxels + 1
     ball_iso = ball(max(n) * 2, dtype=np.float64)
     ball_resampled = resize(ball_iso, n, 1, 'constant', 0, clip=True, anti_aliasing=False, preserve_range=True)
-    ball_resampled[ball_resampled > 0.5] = 1
-    ball_resampled[ball_resampled <= 0.5] = 0
+    ball_resampled = np.where(ball_resampled > 0.5, 1, 0)
     return ball_resampled.astype(dtype)
 
 
@@ -34,11 +33,13 @@ def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int
     """
     Removes all but the largest component in binary_image. Replaces pixels that don't belong to it with background_label
     """
-    filter_fn = lambda x, y: [i for i, j in zip(x, y) if j == max(y)]
+    def filter_fn(x, y):
+        maxy = max(y)
+        return [i for i, j in zip(x, y) if j == maxy]
     return generic_filter_components(binary_image, filter_fn, connectivity)
 
 
-def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[List[int], List[int]], List[int]],
+def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[Sequence[int], Sequence[int]], List[int]],
                               connectivity: int = None):
     """
     filter_fn MUST return the component ids that should be KEPT!
@@ -47,8 +48,8 @@ def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[Lis
     returns a binary array that is True where the filtered components are
     """
     labeled_image, component_sizes = label_with_component_sizes(binary_image, connectivity)
-    component_ids = list(component_sizes.keys())
-    component_sizes = list(component_sizes.values())
+    component_ids = tuple(component_sizes.keys())
+    component_sizes = tuple(component_sizes.values())
     keep = filter_fn(component_ids, component_sizes)
     return np.in1d(labeled_image.ravel(), keep).reshape(labeled_image.shape)
 
