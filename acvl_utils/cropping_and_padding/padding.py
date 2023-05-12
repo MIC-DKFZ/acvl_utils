@@ -67,26 +67,19 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     new_shape = [max(new_shape[i], old_shape[i]) for i in range(len(new_shape))]
 
     if shape_must_be_divisible_by is not None:
-        if not isinstance(shape_must_be_divisible_by, (list, tuple, np.ndarray)):
-            shape_must_be_divisible_by = [shape_must_be_divisible_by] * len(new_shape)
-
-        if len(shape_must_be_divisible_by) < len(new_shape):
-            shape_must_be_divisible_by = [1] * (len(new_shape) - len(shape_must_be_divisible_by)) + \
-                                         list(shape_must_be_divisible_by)
-
         for i in range(len(new_shape)):
-            if new_shape[i] % shape_must_be_divisible_by[i] == 0:
-                new_shape[i] -= shape_must_be_divisible_by[i]
+            modulo = new_shape[i] % shape_must_be_divisible_by[i]
+            if modulo != 0:
+                new_shape[i] += shape_must_be_divisible_by[i] - modulo
 
-        new_shape = np.array([new_shape[i] + shape_must_be_divisible_by[i] - new_shape[i] %
-                              shape_must_be_divisible_by[i] for i in range(len(new_shape))])
+        new_shape = np.array(new_shape)
 
     difference = new_shape - old_shape
     pad_below = difference // 2
-    pad_above = difference // 2 + difference % 2
-    pad_list = [list(i) for i in zip(pad_below, pad_above)]
+    pad_above = pad_below + difference % 2
+    pad_list = [tuple(i) for i in zip(pad_below, pad_above)]
 
-    if not ((all([i == 0 for i in pad_below])) and (all([i == 0 for i in pad_above]))):
+    if np.any(pad_below) or np.any(pad_above):
         if isinstance(image, np.ndarray):
             res = np.pad(image, pad_list, mode, **kwargs)
         elif isinstance(image, torch.Tensor):
