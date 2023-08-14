@@ -77,7 +77,7 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     difference = new_shape - old_shape
     pad_below = difference // 2
     pad_above = pad_below + difference % 2
-    pad_list = [tuple(i) for i in zip(pad_below, pad_above)]
+    pad_list = tuple(zip(pad_below, pad_above))
 
     if np.any(pad_below) or np.any(pad_above):
         if isinstance(image, np.ndarray):
