@@ -40,7 +40,7 @@ def regionprops_bbox_to_proper_bbox(regionprops_bbox: Tuple[int, ...]) -> List[T
 
 
 def bounding_box_to_slice(bounding_box: Sequence[Sequence[int]]):
-    return tuple([slice(*i) for i in bounding_box])
+    return tuple(slice(*i) for i in bounding_box)
 
 
 def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
@@ -96,7 +96,7 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[Tuple[int, int]]:
     where = np.array(np.where(mask))
     mins = np.min(where, 1)
     maxs = np.max(where, 1) + 1
-    return [(i, j) for i, j in zip(mins, maxs)]
+    return tuple(zip(mins, maxs))
 
 
 if __name__ == '__main__':

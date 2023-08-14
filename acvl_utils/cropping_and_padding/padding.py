@@ -64,15 +64,13 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     if len(new_shape) < len(image.shape):
         new_shape = list(image.shape[:len(image.shape) - len(new_shape)]) + list(new_shape)
 
-    new_shape = [max(new_shape[i], old_shape[i]) for i in range(len(new_shape))]
+    new_shape = np.maximum(new_shape, old_shape)
 
     if shape_must_be_divisible_by is not None:
         for i in range(len(new_shape)):
             modulo = new_shape[i] % shape_must_be_divisible_by[i]
             if modulo != 0:
                 new_shape[i] += shape_must_be_divisible_by[i] - modulo
-
-        new_shape = np.array(new_shape)
 
     difference = new_shape - old_shape
     pad_below = difference // 2
