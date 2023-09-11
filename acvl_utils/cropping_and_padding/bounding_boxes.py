@@ -40,7 +40,7 @@ def regionprops_bbox_to_proper_bbox(regionprops_bbox: Tuple[int, ...]) -> List[T
 
 
 def bounding_box_to_slice(bounding_box: Sequence[Sequence[int]]):
-    return tuple(slice(*i) for i in bounding_box)
+    return tuple([slice(*i) for i in bounding_box])
 
 
 def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
