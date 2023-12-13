@@ -2,6 +2,7 @@ from time import time
 from multiprocessing import Pool
 from typing import Union, Tuple, List
 
+import SimpleITK
 import numpy as np
 
 from acvl_utils.cropping_and_padding.bounding_boxes import pad_bbox, bounding_box_to_slice
@@ -83,7 +84,7 @@ def convert_semantic_to_instanceseg_mp(arr: np.ndarray,
     arr[remove] = BORDER_LABEL
 
     # recompute core labels
-    core_instances = label(arr == CENTER_LABEL)
+    core_instances = label(arr == CENTER_LABEL, connectivity=1)
 
     # prepare empty array for results. uint32 for allowing HEAPS of instances. Otherwise we would cap at 65535
     final = np.zeros_like(core_instances, dtype=np.uint32)
@@ -169,7 +170,7 @@ def convert_semantic_to_instanceseg(arr: np.ndarray,
     arr[remove] = BORDER_LABEL
 
     # recompute core labels
-    core_instances = label(arr == CENTER_LABEL)
+    core_instances = label(arr == CENTER_LABEL, connectivity=1)
 
     # prepare empty array for results
     final = np.zeros_like(core_instances, dtype=np.uint32)
@@ -518,3 +519,4 @@ def main_sem_to_instance():
 
 if __name__ == '__main__':
     main_sem_to_instance()
+
