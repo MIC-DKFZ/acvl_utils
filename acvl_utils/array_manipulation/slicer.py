@@ -15,9 +15,9 @@ def slicer(arr, slices):
         print(image.shape)  # (32, 32) (48, 32, 32) or ...
         indices = comp_indices(image, width=8)
         # crop = image[???]  # Not possible to define a crop with arbitrary dimensions with regular slicing. Instead ...
-        if len(image.shape) == 2:
+        if image.ndim == 2:
             crop = image[indices[0][0]:indices[0][1], indices[1][0]:indices[1][1]]  # image[10:22, 10:22])
-        elif len(image.shape) == 3:
+        elif image.ndim == 3:
             crop = image[indices[0][0]:indices[0][1], indices[1][0]:indices[1][1], indices[2][0]:indices[2][1]]  # image[18:30, 10:22, 10:22]
         elif ...
     As you see, this cannot be done with regular slicing as the slicing syntax needs to be hardcoded.
@@ -50,11 +50,11 @@ def slicer(arr, slices):
 
     This function was inspired by the following stackoverflow thread: https://stackoverflow.com/questions/24398708/slicing-a-numpy-array-along-a-dynamically-specified-axis/37729566#37729566
     """
-    slc = [slice(None)] * len(arr.shape)
+    slc = [slice(None)] * arr.ndim
     axis = 0
     for i in range(len(slices)):
         if slices[i] is None:  # Ellipsis: Take all values from multiple axes: array[..., ???]
-            axis = len(arr.shape) - (len(slices) - 1)
+            axis = arr.ndim - (len(slices) - 1)
         elif isinstance(slices[i], numbers.Number):  # Take single value from a single axis: array[???, i, ???]
             slc[axis] = slices[i]
             axis += 1

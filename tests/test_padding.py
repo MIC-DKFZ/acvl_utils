@@ -85,9 +85,9 @@ class TestPadding(unittest.TestCase):
 
     def _verify_divisible_by(self, tensor_or_array, divisible_by: Union[int, Tuple, List], original_tensor):
         if isinstance(divisible_by, int):
-            divisible_by = [divisible_by] * len(tensor_or_array.shape)
-        if len(divisible_by) < len(tensor_or_array.shape):
-            divisible_by = [1] * (len(tensor_or_array.shape) - len(divisible_by)) + list(divisible_by)
+            divisible_by = [divisible_by] * tensor_or_array.ndim
+        if len(divisible_by) < tensor_or_array.ndim:
+            divisible_by = [1] * (tensor_or_array.ndim - len(divisible_by)) + list(divisible_by)
         self.assertTrue(all([i % j == 0 for i, j in zip(tensor_or_array.shape, divisible_by)]))
         self.assertTrue(all([i - j < k for i, j, k in zip(tensor_or_array.shape, divisible_by, original_tensor.shape)]))
 

@@ -31,7 +31,7 @@ def gpu_binary_dilation(binary_array: Union[np.ndarray, torch.Tensor], selem: np
         binary_array = binary_array.to(0, non_blocking=True).half()
 
         # initialize conv as half
-        conv = convert_dim_to_conv_op(len(binary_array.shape))(in_channels=1, out_channels=1,
+        conv = convert_dim_to_conv_op(binary_array.ndim)(in_channels=1, out_channels=1,
                                                                kernel_size=selem.shape,
                                                                stride=1,
                                                                padding='same',
@@ -75,7 +75,7 @@ def gpu_binary_erosion(binary_array: Union[np.ndarray, torch.Tensor], selem: np.
         binary_array = binary_array.to(0, non_blocking=True).half()
 
         # initialize conv as half
-        conv = convert_dim_to_conv_op(len(binary_array.shape))(in_channels=1, out_channels=1,
+        conv = convert_dim_to_conv_op(binary_array.ndim)(in_channels=1, out_channels=1,
                                                                kernel_size=selem.shape,
                                                                stride=1,
                                                                padding='same',

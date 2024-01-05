@@ -22,7 +22,7 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     :param image: can either be a numpy array or a torch.Tensor. pad_nd_image uses np.pad for the former and
            torch.nn.functional.pad for the latter
     :param new_shape: what shape do you want? new_shape does not have to have the same dimensionality as image. If
-           len(new_shape) < len(image.shape) then the last axes of image will be padded. If new_shape < image.shape in
+           len(new_shape) < image.ndim then the last axes of image will be padded. If new_shape < image.shape in
            any of the axes then we will not pad that axis, but also not crop! (interpret new_shape as new_min_shape)
 
            Example:
@@ -51,18 +51,18 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     if shape_must_be_divisible_by is not None:
         assert isinstance(shape_must_be_divisible_by, (int, list, tuple, np.ndarray))
         if isinstance(shape_must_be_divisible_by, int):
-            shape_must_be_divisible_by = [shape_must_be_divisible_by] * len(image.shape)
+            shape_must_be_divisible_by = (shape_must_be_divisible_by, ) * image.ndim
         else:
-            if len(shape_must_be_divisible_by) < len(image.shape):
-                shape_must_be_divisible_by = [1] * (len(image.shape) - len(shape_must_be_divisible_by)) + \
-                                             list(shape_must_be_divisible_by)
+            if len(shape_must_be_divisible_by) < image.ndim:
+                shape_must_be_divisible_by = (1, ) * (image.ndim - len(shape_must_be_divisible_by)) + \
+                                             tuple(shape_must_be_divisible_by)
 
     if new_shape is None:
         assert shape_must_be_divisible_by is not None
         new_shape = image.shape
 
-    if len(new_shape) < len(image.shape):
-        new_shape = list(image.shape[:len(image.shape) - len(new_shape)]) + list(new_shape)
+    if len(new_shape) < image.ndim:
+        new_shape = image.shape[:image.ndim - len(new_shape)] + tuple(new_shape)
 
     new_shape = np.maximum(new_shape, old_shape)
 
@@ -92,5 +92,5 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     else:
         pad_list = np.array(pad_list)
         pad_list[:, 1] = np.array(res.shape) - pad_list[:, 1]
-        slicer = tuple(slice(*i) for i in pad_list)
+        slicer = tuple([slice(*i) for i in pad_list])
         return res, slicer

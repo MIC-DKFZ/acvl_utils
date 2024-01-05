@@ -44,8 +44,8 @@ def bounding_box_to_slice(bounding_box: Sequence[Sequence[int]]):
 
 
 def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
-    assert len(bounding_box) == len(array.shape), f"Dimensionality of bbox and array do not match. bbox has length " \
-                                          f"{len(bounding_box)} while array has dimension {len(array.shape)}"
+    assert len(bounding_box) == array.ndim, f"Dimensionality of bbox and array do not match. bbox has length " \
+                                          f"{len(bounding_box)} while array has dimension {array.ndim}"
     slicer = bounding_box_to_slice(bounding_box)
     return array[slicer]
 
