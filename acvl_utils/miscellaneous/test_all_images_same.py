@@ -1,6 +1,8 @@
+from os.path import join
 from typing import Callable
 
-from batchgenerators.utilities.file_and_folder_operations import subfiles, join
+from batchgenerators.utilities.file_and_folder_operations import subfiles
+
 from multiprocessing import Pool
 
 import SimpleITK as sitk
