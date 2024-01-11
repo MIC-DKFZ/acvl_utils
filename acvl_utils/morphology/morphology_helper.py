@@ -13,12 +13,11 @@ def generate_ball(radius: Union[Tuple, List], spacing: Union[Tuple, List] = (1, 
     If you use spacing, both radius and spacing will be interpreted relative to each other, so a radius of 10 with a
     spacing of 5 will result in a ball with radius 2 pixels.
     """
-    radius_in_voxels = np.array([round(i) for i in radius / np.array(spacing)])
+    radius_in_voxels = (radius / np.array(spacing)).round()
     n = 2 * radius_in_voxels + 1
     ball_iso = ball(max(n) * 2, dtype=np.float64)
     ball_resampled = resize(ball_iso, n, 1, 'constant', 0, clip=True, anti_aliasing=False, preserve_range=True)
-    ball_resampled = np.where(ball_resampled > 0.5, 1, 0)
-    return ball_resampled.astype(dtype)
+    return np.where(ball_resampled > 0.5, dtype(1), dtype(0))
 
 
 def label_with_component_sizes(binary_image: np.ndarray, connectivity: int = None) -> Tuple[np.ndarray, dict]:
@@ -87,8 +86,7 @@ def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, t
             print(f'{len(keep)} objects are smaller than the maximum size of {threshold_size_in_pixels}. '
                   f'Removing {len(component_sizes) - len(keep)} large objects...')
 
-    keep = np.in1d(labeled_image, keep).astype(binary_image.dtype).reshape(binary_image.shape)
-    return keep
+    return np.in1d(labeled_image, keep).astype(binary_image.dtype, copy=False).reshape(binary_image.shape)
 
 
 def remove_components_cc3d(binary_image: np.ndarray, threshold_size_in_pixels: int, threshold_type: str = 'min',
@@ -140,9 +138,7 @@ def remove_components_cc3d(binary_image: np.ndarray, threshold_size_in_pixels: i
                   f'Removing {num_components - len(labels_to_keep)} large objects...')
 
     # in the component mask set every label that should be removed to 0
-    keep = np.in1d(components, labels_to_keep).astype(binary_image.dtype).reshape(binary_image.shape)
-
-    return keep
+    return np.in1d(components, labels_to_keep).astype(binary_image.dtype, copy=False).reshape(binary_image.shape)
 
 
 if __name__ == '__main__':
