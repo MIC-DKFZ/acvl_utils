@@ -8,9 +8,9 @@ from skimage.morphology import ball, disk
 def signed_edt(binary_input_array: np.ndarray, spacing: Union[float, Tuple[float, ...]] = 1.):
     mask = binary_input_array == 1
 
-    if len(binary_input_array.shape) == 3:
+    if binary_input_array.ndim == 3:
         strel = ball(1)
-    elif len(binary_input_array.shape) == 2:
+    elif binary_input_array.ndim == 2:
         strel = disk(1)
     else:
         raise RuntimeError()

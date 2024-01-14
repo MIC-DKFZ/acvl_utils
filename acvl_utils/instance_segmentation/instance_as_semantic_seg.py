@@ -42,7 +42,8 @@ def _internal_convert_semantic_to_instance_mp(cropped_core_instances, cropped_bo
         dilated = dilation(cropped_current, ball_here)
         dilated[background_mask] = 0
         diff = (cropped_current == 0) & (dilated != cropped_current)
-        cropped_final[diff & cropped_border] = dilated[diff & cropped_border]
+        diff_border_mask = diff & cropped_border
+        cropped_final[diff_border_mask] = dilated[diff_border_mask]
         cropped_border[diff] = 0
         cropped_current = dilated
         already_dilated_mm = [already_dilated_mm[i] + spacing[i] if strel_size[i] == 1 else
@@ -229,7 +230,8 @@ def convert_semantic_to_instanceseg(arr: np.ndarray,
                 dilated = dilation(cropped_current, ball_here)
                 dilated[~cropped_mask] = 0
                 diff = (cropped_current == 0) & (dilated != cropped_current)
-                cropped_final[diff & cropped_border] = dilated[diff & cropped_border]
+                diff_border_mask = diff & cropped_border
+                cropped_final[diff_border_mask] = dilated[diff_border_mask]
                 cropped_border[diff] = 0
                 cropped_current = dilated
                 already_dilated_mm = [

@@ -22,7 +22,7 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     :param image: can either be a numpy array or a torch.Tensor. pad_nd_image uses np.pad for the former and
            torch.nn.functional.pad for the latter
     :param new_shape: what shape do you want? new_shape does not have to have the same dimensionality as image. If
-           len(new_shape) < len(image.shape) then the last axes of image will be padded. If new_shape < image.shape in
+           len(new_shape) < image.ndim then the last axes of image will be padded. If new_shape < image.shape in
            any of the axes then we will not pad that axis, but also not crop! (interpret new_shape as new_min_shape)
 
            Example:
@@ -51,42 +51,33 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     if shape_must_be_divisible_by is not None:
         assert isinstance(shape_must_be_divisible_by, (int, list, tuple, np.ndarray))
         if isinstance(shape_must_be_divisible_by, int):
-            shape_must_be_divisible_by = [shape_must_be_divisible_by] * len(image.shape)
+            shape_must_be_divisible_by = (shape_must_be_divisible_by, ) * image.ndim
         else:
-            if len(shape_must_be_divisible_by) < len(image.shape):
-                shape_must_be_divisible_by = [1] * (len(image.shape) - len(shape_must_be_divisible_by)) + \
-                                             list(shape_must_be_divisible_by)
+            if len(shape_must_be_divisible_by) < image.ndim:
+                shape_must_be_divisible_by = (1, ) * (image.ndim - len(shape_must_be_divisible_by)) + \
+                                             tuple(shape_must_be_divisible_by)
 
     if new_shape is None:
         assert shape_must_be_divisible_by is not None
         new_shape = image.shape
 
-    if len(new_shape) < len(image.shape):
-        new_shape = list(image.shape[:len(image.shape) - len(new_shape)]) + list(new_shape)
+    if len(new_shape) < image.ndim:
+        new_shape = image.shape[:image.ndim - len(new_shape)] + tuple(new_shape)
 
-    new_shape = [max(new_shape[i], old_shape[i]) for i in range(len(new_shape))]
+    new_shape = np.maximum(new_shape, old_shape)
 
     if shape_must_be_divisible_by is not None:
-        if not isinstance(shape_must_be_divisible_by, (list, tuple, np.ndarray)):
-            shape_must_be_divisible_by = [shape_must_be_divisible_by] * len(new_shape)
-
-        if len(shape_must_be_divisible_by) < len(new_shape):
-            shape_must_be_divisible_by = [1] * (len(new_shape) - len(shape_must_be_divisible_by)) + \
-                                         list(shape_must_be_divisible_by)
-
         for i in range(len(new_shape)):
-            if new_shape[i] % shape_must_be_divisible_by[i] == 0:
-                new_shape[i] -= shape_must_be_divisible_by[i]
-
-        new_shape = np.array([new_shape[i] + shape_must_be_divisible_by[i] - new_shape[i] %
-                              shape_must_be_divisible_by[i] for i in range(len(new_shape))])
+            modulo = new_shape[i] % shape_must_be_divisible_by[i]
+            if modulo != 0:
+                new_shape[i] += shape_must_be_divisible_by[i] - modulo
 
     difference = new_shape - old_shape
     pad_below = difference // 2
-    pad_above = difference // 2 + difference % 2
-    pad_list = [list(i) for i in zip(pad_below, pad_above)]
+    pad_above = pad_below + difference % 2
+    pad_list = tuple(zip(pad_below, pad_above))
 
-    if not ((all([i == 0 for i in pad_below])) and (all([i == 0 for i in pad_above]))):
+    if np.any(pad_below) or np.any(pad_above):
         if isinstance(image, np.ndarray):
             res = np.pad(image, pad_list, mode, **kwargs)
         elif isinstance(image, torch.Tensor):
@@ -101,5 +92,5 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
     else:
         pad_list = np.array(pad_list)
         pad_list[:, 1] = np.array(res.shape) - pad_list[:, 1]
-        slicer = tuple(slice(*i) for i in pad_list)
+        slicer = tuple([slice(*i) for i in pad_list])
         return res, slicer

@@ -1,6 +1,8 @@
+from os.path import join
 from typing import Callable
 
-from batchgenerators.utilities.file_and_folder_operations import subfiles, join
+from batchgenerators.utilities.file_and_folder_operations import subfiles
+
 from multiprocessing import Pool
 
 import SimpleITK as sitk
@@ -19,7 +21,7 @@ def test_same_generic(file_1: str, file_2: str, load_fn: Callable[[str], np.ndar
     file_1_np = load_fn(file_1)
     file_2_np = load_fn(file_2)
 
-    if not len(file_1_np.shape) == len(file_2_np.shape):
+    if not file_1_np.ndim == file_2_np.ndim:
         print(f'Dimension mismatch between {file_1} and {file_2}. Shapes {file_1_np.shape} and {file_2_np.shape}')
         return
 
