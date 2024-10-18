@@ -1,4 +1,4 @@
-from typing import Union, Tuple, List, Callable
+from typing import Union, Tuple, List, Callable, Dict
 
 import numpy as np
 from skimage.measure import label
@@ -27,6 +27,27 @@ def label_with_component_sizes(binary_image: np.ndarray, connectivity: int = Non
         print('Warning: it would be way faster if your binary image had dtype bool')
     labeled_image, num_components = label(binary_image, return_num=True, connectivity=connectivity)
     component_sizes = {i + 1: j for i, j in enumerate(np.bincount(labeled_image.ravel())[1:])}
+    return labeled_image, component_sizes
+
+
+def cc3d_label_with_component_sizes(binary_image: np.ndarray, connectivity: int = 6) -> Tuple[np.ndarray, Dict[int, int]]:
+    """
+    Uses cc3d to label connected components in a binary image and returns the labeled image along with
+    a dictionary of component sizes.
+
+    Parameters:
+    binary_image (np.ndarray): The input binary image where connected components should be labeled.
+    connectivity (int): Connectivity of components (default 6 for 3D images).
+
+    Returns:
+    Tuple[np.ndarray, dict]: A tuple with the labeled image and a dictionary of component sizes.
+    """
+    # Ensure the image is binary
+    labeled_image = cc3d.connected_components(binary_image, connectivity=connectivity)
+
+    # Get the sizes of each component (ignoring background, i.e., label 0)
+    component_sizes = {i: j for i, j in enumerate(np.bincount(labeled_image.ravel())[1:], start=1)}
+
     return labeled_image, component_sizes
 
 
