@@ -1,6 +1,9 @@
-import numpy as np
 from copy import deepcopy
 from typing import List, Tuple, Union
+
+import numpy as np
+import torch
+import torch.nn.functional as F
 
 
 def pad_bbox(bounding_box: Union[List[List[int]], Tuple[Tuple[int, int]]], pad_amount: Union[int, List[int]],
@@ -50,6 +53,8 @@ def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
     """
     this implementation uses less ram than the np.where one and is faster as well IF we expect the bounding box to
     be close to the image size. If it's not it's likely slower!
+    
+    bbox is returned so that you can just do slice(minzidx, maxzidx) to retrieve the object of interest with nothing cut off
 
     :param mask:
     :param outside_value:
@@ -94,6 +99,98 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
     mins = np.min(where, 1)
     maxs = np.max(where, 1) + 1
     return [[i, j] for i, j in zip(mins, maxs)]
+
+
+import torch
+import numpy as np
+import torch.nn.functional as F
+from typing import Union, List
+
+
+def crop_and_pad_nd(
+        image: Union[torch.Tensor, np.ndarray],
+        bbox: List[List[int]]
+) -> Union[torch.Tensor, np.ndarray]:
+    """
+    Crops a bounding box directly specified by bbox, including the upper bound.
+    If the bounding box extends beyond the image boundaries, the cropped area is padded
+    to maintain the desired size. Initial dimensions not included in bbox remain unaffected.
+
+    Parameters:
+    - image: N-dimensional torch.Tensor or np.ndarray representing the image
+    - bbox: List of [[dim_min, dim_max], ...] defining the bounding box for the last dimensions
+
+    Returns:
+    - Cropped and padded patch of the requested bounding box size, as the same type as `image`
+
+    Example:
+    >>> image = np.random.randn(5, 100, 100, 100)  # 4D numpy array
+    >>> bbox = [[3, 7], [45, 55], [45, 55]]        # Bounding box for the last 3 dimensions
+    >>> cropped_patch = crop_and_pad_nd(image, bbox)
+    >>> print("Cropped patch shape:", cropped_patch.shape)  # Should be (5, 5, 11, 11)
+    """
+
+    # Determine the number of dimensions to crop based on bbox
+    crop_dims = len(bbox)
+    img_shape = image.shape
+    num_dims = len(img_shape)
+
+    # Initialize the crop and pad specifications for each dimension
+    slices = []
+    padding = []
+    output_shape = list(img_shape[:num_dims - crop_dims])  # Initial dimensions remain as in the original image
+    target_shape = output_shape + [max_val - min_val + 1 for min_val, max_val in bbox]
+
+    # Iterate through dimensions, applying bbox to the last `crop_dims` dimensions
+    for i in range(num_dims):
+        if i < num_dims - crop_dims:
+            # For initial dimensions not covered by bbox, include the entire dimension
+            slices.append(slice(None))
+            padding.append([0, 0])
+            output_shape.append(img_shape[i])  # Keep the initial dimensions as they are
+        else:
+            # For dimensions specified in bbox, directly use the min and max bounds
+            dim_idx = i - (num_dims - crop_dims)  # Index within bbox
+
+            min_val = bbox[dim_idx][0]
+            max_val = bbox[dim_idx][1]
+
+            # Check if the bounding box is completely outside the image bounds
+            if max_val < 0 or min_val > img_shape[i]:
+                # If outside bounds, return an empty array or tensor of the target shape
+                if isinstance(image, torch.Tensor):
+                    return torch.zeros(target_shape, dtype=image.dtype, device=image.device)
+                elif isinstance(image, np.ndarray):
+                    return np.zeros(target_shape, dtype=image.dtype)
+
+            # Calculate valid cropping ranges within image bounds and include the upper bound
+            valid_min = max(min_val, 0)
+            valid_max = min(max_val + 1, img_shape[i])  # Include upper bound by adding 1
+            slices.append(slice(valid_min, valid_max))
+
+            # Calculate padding needed for this dimension
+            pad_before = max(0, -min_val)
+            pad_after = max(0, max_val + 1 - img_shape[i])
+            padding.append([pad_before, pad_after])
+
+            # Define the shape based on the bbox range in this dimension
+            output_shape.append(max_val - min_val + 1)
+
+    # Crop the valid part of the bounding box
+    cropped = image[tuple(slices)]
+
+    # Apply padding to the cropped patch
+    if isinstance(image, torch.Tensor):
+        flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
+        padded_cropped = F.pad(cropped, flattened_padding, mode="constant", value=0)
+    elif isinstance(image, np.ndarray):
+        pad_width = [(p[0], p[1]) for p in padding]
+        padded_cropped = np.pad(cropped, pad_width=pad_width, mode='constant', constant_values=0)
+    else:
+        raise ValueError(f'Unsupported image type {type(image)}')
+
+    return padded_cropped
+
 
 
 if __name__ == '__main__':
