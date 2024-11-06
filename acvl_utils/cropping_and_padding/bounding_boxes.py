@@ -1,5 +1,6 @@
 from copy import deepcopy
-from typing import List, Tuple, Union
+from typing import Tuple
+from typing import Union, List
 
 import numpy as np
 import torch
@@ -40,13 +41,6 @@ def regionprops_bbox_to_proper_bbox(regionprops_bbox: Tuple[int, ...]) -> List[L
 
 def bounding_box_to_slice(bounding_box: List[List[int]]):
     return tuple([slice(*i) for i in bounding_box])
-
-
-def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
-    assert len(bounding_box) == len(array.shape), f"Dimensionality of bbox and array do not match. bbox has length " \
-                                          f"{len(bounding_box)} while array has dimension {len(array.shape)}"
-    slicer = bounding_box_to_slice(bounding_box)
-    return array[slicer]
 
 
 def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
@@ -101,33 +95,21 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
     return [[i, j] for i, j in zip(mins, maxs)]
 
 
-import torch
-import numpy as np
-import torch.nn.functional as F
-from typing import Union, List
-
-
 def crop_and_pad_nd(
         image: Union[torch.Tensor, np.ndarray],
         bbox: List[List[int]]
 ) -> Union[torch.Tensor, np.ndarray]:
     """
-    Crops a bounding box directly specified by bbox, including the upper bound.
+    Crops a bounding box directly specified by bbox, excluding the upper bound.
     If the bounding box extends beyond the image boundaries, the cropped area is padded
     to maintain the desired size. Initial dimensions not included in bbox remain unaffected.
 
     Parameters:
     - image: N-dimensional torch.Tensor or np.ndarray representing the image
-    - bbox: List of [[dim_min, dim_max], ...] defining the bounding box for the last dimensions
+    - bbox: List of [[dim_min, dim_max], ...] defining the bounding box for the last dimensions.
 
     Returns:
-    - Cropped and padded patch of the requested bounding box size, as the same type as `image`
-
-    Example:
-    >>> image = np.random.randn(5, 100, 100, 100)  # 4D numpy array
-    >>> bbox = [[3, 7], [45, 55], [45, 55]]        # Bounding box for the last 3 dimensions
-    >>> cropped_patch = crop_and_pad_nd(image, bbox)
-    >>> print("Cropped patch shape:", cropped_patch.shape)  # Should be (5, 5, 11, 11)
+    - Cropped and padded patch of the requested bounding box size, as the same type as `image`.
     """
 
     # Determine the number of dimensions to crop based on bbox
@@ -139,7 +121,7 @@ def crop_and_pad_nd(
     slices = []
     padding = []
     output_shape = list(img_shape[:num_dims - crop_dims])  # Initial dimensions remain as in the original image
-    target_shape = output_shape + [max_val - min_val + 1 for min_val, max_val in bbox]
+    target_shape = output_shape + [max_val - min_val for min_val, max_val in bbox]
 
     # Iterate through dimensions, applying bbox to the last `crop_dims` dimensions
     for i in range(num_dims):
@@ -156,25 +138,25 @@ def crop_and_pad_nd(
             max_val = bbox[dim_idx][1]
 
             # Check if the bounding box is completely outside the image bounds
-            if max_val < 0 or min_val > img_shape[i]:
+            if max_val <= 0 or min_val >= img_shape[i]:
                 # If outside bounds, return an empty array or tensor of the target shape
                 if isinstance(image, torch.Tensor):
                     return torch.zeros(target_shape, dtype=image.dtype, device=image.device)
                 elif isinstance(image, np.ndarray):
                     return np.zeros(target_shape, dtype=image.dtype)
 
-            # Calculate valid cropping ranges within image bounds and include the upper bound
+            # Calculate valid cropping ranges within image bounds, excluding the upper bound
             valid_min = max(min_val, 0)
-            valid_max = min(max_val + 1, img_shape[i])  # Include upper bound by adding 1
+            valid_max = min(max_val, img_shape[i])  # Exclude upper bound by using max_val directly
             slices.append(slice(valid_min, valid_max))
 
             # Calculate padding needed for this dimension
             pad_before = max(0, -min_val)
-            pad_after = max(0, max_val + 1 - img_shape[i])
+            pad_after = max(0, max_val - img_shape[i])
             padding.append([pad_before, pad_after])
 
             # Define the shape based on the bbox range in this dimension
-            output_shape.append(max_val - min_val + 1)
+            output_shape.append(max_val - min_val)
 
     # Crop the valid part of the bounding box
     cropped = image[tuple(slices)]
@@ -191,6 +173,83 @@ def crop_and_pad_nd(
 
     return padded_cropped
 
+
+def insert_crop_into_image(
+        image: Union[torch.Tensor, np.ndarray],
+        crop: Union[torch.Tensor, np.ndarray],
+        bbox: List[List[int]]
+) -> Union[torch.Tensor, np.ndarray]:
+    """
+    Inserts a cropped patch back into the original image at the position specified by bbox.
+    If the bounding box extends beyond the image boundaries, only the valid portions are inserted.
+    If the bounding box lies entirely outside the image, the original image is returned.
+
+    Parameters:
+    - image: Original N-dimensional torch.Tensor or np.ndarray to which the crop will be inserted.
+    - crop: Cropped patch of the image to be reinserted. May have additional dimensions compared to bbox.
+    - bbox: List of [[dim_min, dim_max], ...] defining the bounding box for the last dimensions of the crop in the original image.
+
+    Returns:
+    - image: The original image with the crop reinserted at the specified location (modified in-place).
+    """
+
+    # Ensure that bbox only applies to the last len(bbox) dimensions of crop and image
+    num_dims = len(image.shape)
+    crop_dims = len(crop.shape)
+    bbox_dims = len(bbox)
+
+    if crop_dims < bbox_dims:
+        raise ValueError("Bounding box dimensions cannot exceed crop dimensions.")
+
+    # Validate that non-cropped leading dimensions match between image and crop
+    leading_dims = num_dims - bbox_dims
+    if image.shape[:leading_dims] != crop.shape[:leading_dims]:
+        raise ValueError("Leading dimensions of crop and image must match.")
+
+    # Check if the bounding box lies completely outside the image bounds for each cropped dimension
+    for i in range(bbox_dims):
+        min_val, max_val = bbox[i]
+        dim_idx = leading_dims + i  # Corresponding dimension in the image
+
+        if max_val <= 0 or min_val >= image.shape[dim_idx]:
+            # If completely out of bounds in any dimension, return the original image
+            return image
+
+    # Prepare slices for inserting the crop into the original image
+    image_slices = []
+    crop_slices = []
+
+    # Iterate over all dimensions, applying bbox only to the last len(bbox) dimensions
+    for i in range(num_dims):
+        if i < leading_dims:
+            # For leading dimensions, use entire dimension (slice(None)) and validate shape
+            image_slices.append(slice(None))
+            crop_slices.append(slice(None))
+        else:
+            # For dimensions specified by bbox, calculate the intersection with image bounds
+            dim_idx = i - leading_dims
+            min_val, max_val = bbox[dim_idx]
+
+            crop_start = max(0, -min_val)  # Start of the crop within the valid area
+            image_start = max(0, min_val)  # Start of the image where the crop will be inserted
+            image_end = min(max_val, image.shape[i])  # Exclude upper bound by using max_val directly
+
+            # Adjusted range for insertion
+            crop_end = crop_start + (image_end - image_start)
+
+            # Append slices for both image and crop insertion ranges
+            image_slices.append(slice(image_start, image_end))
+            crop_slices.append(slice(crop_start, crop_end))
+
+    # Insert the valid part of the crop back into the original image
+    if isinstance(image, torch.Tensor):
+        image[tuple(image_slices)] = crop[tuple(crop_slices)]
+    elif isinstance(image, np.ndarray):
+        image[tuple(image_slices)] = crop[tuple(crop_slices)]
+    else:
+        raise ValueError(f"Unsupported image type {type(image)}")
+
+    return image
 
 
 if __name__ == '__main__':
