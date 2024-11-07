@@ -80,7 +80,7 @@ def convert_semantic_to_instanceseg_mp(arr: np.ndarray,
     # we first identify centers that are too small and set them to be border. This should remove false positive instances
     labeled_image, component_sizes = label_with_component_sizes(arr == CENTER_LABEL, connectivity=1)
     remove = np.array([i for i, j in component_sizes.items() if j <= small_center_threshold_in_pixels])
-    remove = np.in1d(labeled_image.ravel(), remove).reshape(labeled_image.shape)
+    remove = np.isin(labeled_image.ravel(), remove).reshape(labeled_image.shape)
     arr[remove] = BORDER_LABEL
 
     # recompute core labels
@@ -166,7 +166,7 @@ def convert_semantic_to_instanceseg(arr: np.ndarray,
     # we first identify centers that are too small and set them to be border. This should remove false positive instances
     labeled_image, component_sizes = label_with_component_sizes(arr == CENTER_LABEL, connectivity=1)
     remove = np.array([i for i, j in component_sizes.items() if j <= small_center_threshold_in_pixels])
-    remove = np.in1d(labeled_image.ravel(), remove).reshape(labeled_image.shape)
+    remove = np.isin(labeled_image.ravel(), remove).reshape(labeled_image.shape)
     arr[remove] = BORDER_LABEL
 
     # recompute core labels

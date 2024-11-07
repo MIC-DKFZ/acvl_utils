@@ -71,7 +71,7 @@ def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[Lis
     component_ids = list(component_sizes.keys())
     component_sizes = list(component_sizes.values())
     keep = filter_fn(component_ids, component_sizes)
-    return np.in1d(labeled_image.ravel(), keep).reshape(labeled_image.shape)
+    return np.isin(labeled_image.ravel(), keep).reshape(labeled_image.shape)
 
 
 def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, threshold_type: str = 'min',
@@ -107,7 +107,7 @@ def remove_components(binary_image: np.ndarray, threshold_size_in_pixels: int, t
             print(f'{len(keep)} objects are smaller than the maximum size of {threshold_size_in_pixels}. '
                   f'Removing {len(component_sizes) - len(keep)} large objects...')
 
-    keep = np.in1d(labeled_image, keep).astype(binary_image.dtype).reshape(binary_image.shape)
+    keep = np.isin(labeled_image, keep).astype(binary_image.dtype).reshape(binary_image.shape)
     return keep
 
 
@@ -160,7 +160,7 @@ def remove_components_cc3d(binary_image: np.ndarray, threshold_size_in_pixels: i
                   f'Removing {num_components - len(labels_to_keep)} large objects...')
 
     # in the component mask set every label that should be removed to 0
-    keep = np.in1d(components, labels_to_keep).astype(binary_image.dtype).reshape(binary_image.shape)
+    keep = np.isin(components, labels_to_keep).astype(binary_image.dtype).reshape(binary_image.shape)
 
     return keep
 
