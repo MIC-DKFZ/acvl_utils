@@ -2,6 +2,7 @@ from copy import deepcopy
 from typing import Tuple
 from typing import Union, List
 
+import blosc2
 import numpy as np
 import torch
 import torch.nn.functional as F
@@ -96,8 +97,9 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
 
 
 def crop_and_pad_nd(
-        image: Union[torch.Tensor, np.ndarray],
-        bbox: List[List[int]]
+        image: Union[torch.Tensor, np.ndarray, blosc2.ndarray.NDArray],
+        bbox: List[List[int]],
+        pad_value = 0
 ) -> Union[torch.Tensor, np.ndarray]:
     """
     Crops a bounding box directly specified by bbox, excluding the upper bound.
@@ -142,7 +144,7 @@ def crop_and_pad_nd(
                 # If outside bounds, return an empty array or tensor of the target shape
                 if isinstance(image, torch.Tensor):
                     return torch.zeros(target_shape, dtype=image.dtype, device=image.device)
-                elif isinstance(image, np.ndarray):
+                elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
                     return np.zeros(target_shape, dtype=image.dtype)
 
             # Calculate valid cropping ranges within image bounds, excluding the upper bound
@@ -164,10 +166,10 @@ def crop_and_pad_nd(
     # Apply padding to the cropped patch
     if isinstance(image, torch.Tensor):
         flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
-        padded_cropped = F.pad(cropped, flattened_padding, mode="constant", value=0)
-    elif isinstance(image, np.ndarray):
+        padded_cropped = F.pad(cropped, flattened_padding, mode="constant", value=pad_value)
+    elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
         pad_width = [(p[0], p[1]) for p in padding]
-        padded_cropped = np.pad(cropped, pad_width=pad_width, mode='constant', constant_values=0)
+        padded_cropped = np.pad(cropped, pad_width=pad_width, mode='constant', constant_values=pad_value)
     else:
         raise ValueError(f'Unsupported image type {type(image)}')
 
