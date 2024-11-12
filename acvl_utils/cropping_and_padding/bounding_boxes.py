@@ -44,6 +44,13 @@ def bounding_box_to_slice(bounding_box: List[List[int]]):
     return tuple([slice(*i) for i in bounding_box])
 
 
+def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
+    assert len(bounding_box) == len(array.shape), f"Dimensionality of bbox and array do not match. bbox has length " \
+                                          f"{len(bounding_box)} while array has dimension {len(array.shape)}"
+    slicer = bounding_box_to_slice(bounding_box)
+    return array[slicer]
+
+
 def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
     """
     this implementation uses less ram than the np.where one and is faster as well IF we expect the bounding box to
