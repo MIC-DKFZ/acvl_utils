@@ -55,7 +55,7 @@ def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
     """
     this implementation uses less ram than the np.where one and is faster as well IF we expect the bounding box to
     be close to the image size. If it's not it's likely slower!
-    
+
     bbox is returned so that you can just do slice(minzidx, maxzidx) to retrieve the object of interest with nothing cut off
 
     :param mask:
