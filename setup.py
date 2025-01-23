@@ -2,7 +2,7 @@ from setuptools import setup, find_namespace_packages
 
 setup(name='acvl_utils',
       packages=find_namespace_packages(include=["acvl_utils", "acvl_utils.*"]),
-      version='0.2.1',
+      version='0.2.2',
       description='Super cool utilities that we just love to use',
       # url='',
       author='Applied Computer Vision Lab, Helmholtz Imaging & Division of Medical Image Computing, German Cancer Research Center',
@@ -14,6 +14,7 @@ setup(name='acvl_utils',
           "torch",
           "SimpleITK",
           "scikit-image",
-          "connected-components-3d"
+          "connected-components-3d",
+          "blosc2>=3.0.0b4"
       ],
       )
