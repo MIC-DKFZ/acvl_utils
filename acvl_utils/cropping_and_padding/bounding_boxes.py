@@ -99,12 +99,52 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
 def crop_and_pad_nd(
         image: Union[torch.Tensor, np.ndarray, blosc2.ndarray.NDArray],
         bbox: List[List[int]],
-        pad_value = 0
+        pad_value = 0,
+        pad_mode: str = 'constant'
 ) -> Union[torch.Tensor, np.ndarray]:
     """
-    Crops a bounding box directly specified by bbox, excluding the upper bound.
+    Crops a bounding box directly specified by bbox, INCLUDING the upper bound.
     If the bounding box extends beyond the image boundaries, the cropped area is padded
     to maintain the desired size. Initial dimensions not included in bbox remain unaffected.
+
+    Pad modes for torch:
+    'constant', 'reflect', 'replicate' or 'circular'
+
+    Pad modes for numpy
+       'constant' (default)
+            Pads with a constant value.
+        'edge'
+            Pads with the edge values of array.
+        'linear_ramp'
+            Pads with the linear ramp between end_value and the
+            array edge value.
+        'maximum'
+            Pads with the maximum value of all or part of the
+            vector along each axis.
+        'mean'
+            Pads with the mean value of all or part of the
+            vector along each axis.
+        'median'
+            Pads with the median value of all or part of the
+            vector along each axis.
+        'minimum'
+            Pads with the minimum value of all or part of the
+            vector along each axis.
+        'reflect'
+            Pads with the reflection of the vector mirrored on
+            the first and last values of the vector along each
+            axis.
+        'symmetric'
+            Pads with the reflection of the vector mirrored
+            along the edge of the array.
+        'wrap'
+            Pads with the wrap of the vector along the axis.
+            The first values are used to pad the end and the
+            end values are used to pad the beginning.
+        'empty'
+            Pads with undefined values.
+
+    We only support constant, reflect and replicate/edge
 
     Parameters:
     - image: N-dimensional torch.Tensor or np.ndarray representing the image
@@ -113,6 +153,8 @@ def crop_and_pad_nd(
     Returns:
     - Cropped and padded patch of the requested bounding box size, as the same type as `image`.
     """
+
+    assert pad_mode in ['constant', 'reflect', 'replicate', 'edge']
 
     # Determine the number of dimensions to crop based on bbox
     crop_dims = len(bbox)
@@ -165,9 +207,18 @@ def crop_and_pad_nd(
 
     # Apply padding to the cropped patch
     if isinstance(image, torch.Tensor):
+        if pad_mode == 'edge':
+            pad_mode = 'replicate'
+            # torch is stupid (NotImplementedError: Only 2D, 3D, 4D, 5D padding with non-constant padding are supported for now)
+            # it wants a 4d tensor to do 2d padding
+            cropped = cropped[None, None]
         flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
-        padded_cropped = F.pad(cropped, flattened_padding, mode="constant", value=pad_value)
+        padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
+        if pad_mode == 'replicate':
+            padded_cropped = padded_cropped[0, 0]
     elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
+        if pad_mode == 'replicate':
+            pad_mode = 'edge'
         pad_width = [(p[0], p[1]) for p in padding]
         padded_cropped = np.pad(cropped, pad_width=pad_width, mode='constant', constant_values=pad_value)
     else:
