@@ -264,7 +264,6 @@ class TestCropAndPadND(unittest.TestCase):
         self.assertEqual(cropped_patch.shape, (5, 10, 10, 5))
         np.testing.assert_array_equal(cropped_patch, self.image_np[:, :, :, 3:8])
 
-
     def test_two_dimensions_crop_np(self):
         """Test cropping the last two dimensions of a 4D np.ndarray."""
         bbox = [[3, 8], [1, 7]]
@@ -273,7 +272,6 @@ class TestCropAndPadND(unittest.TestCase):
         # Expected shape includes initial dimensions unaffected, cropping last two dimensions
         self.assertEqual(cropped_patch.shape, (5, 10, 5, 6))
         np.testing.assert_array_equal(cropped_patch, self.image_np[:, :, 3:8, 1:7])
-
 
     def test_three_dimensions_crop_np(self):
         """Test cropping the last three dimensions of a 4D np.ndarray."""
@@ -284,7 +282,6 @@ class TestCropAndPadND(unittest.TestCase):
         self.assertEqual(cropped_patch.shape, (5, 5, 7, 5))
         np.testing.assert_array_equal(cropped_patch, self.image_np[:, 1:6, 2:9, 3:8])
 
-
     def test_all_dimensions_crop_np(self):
         """Test cropping all dimensions of a 4D np.ndarray."""
         bbox = [[1, 4], [2, 7], [0, 6], [4, 9]]
@@ -293,7 +290,6 @@ class TestCropAndPadND(unittest.TestCase):
         # Expected shape with all dimensions cropped as per bbox
         self.assertEqual(cropped_patch.shape, (3, 5, 6, 5))
         np.testing.assert_array_equal(cropped_patch, self.image_np[1:4, 2:7, 0:6, 4:9])
-
 
     def test_single_dimension_crop_torch(self):
         """Test cropping only the last dimension of a 4D torch.Tensor."""
@@ -304,7 +300,6 @@ class TestCropAndPadND(unittest.TestCase):
         self.assertEqual(cropped_patch.shape, (5, 10, 10, 5))
         torch.testing.assert_close(cropped_patch, self.image_torch[:, :, :, 3:8])
 
-
     def test_two_dimensions_crop_torch(self):
         """Test cropping the last two dimensions of a 4D torch.Tensor."""
         bbox = [[3, 8], [1, 7]]
@@ -313,7 +308,6 @@ class TestCropAndPadND(unittest.TestCase):
         # Expected shape includes initial dimensions unaffected, cropping last two dimensions
         self.assertEqual(cropped_patch.shape, (5, 10, 5, 6))
         torch.testing.assert_close(cropped_patch, self.image_torch[:, :, 3:8, 1:7])
-
 
     def test_three_dimensions_crop_torch(self):
         """Test cropping the last three dimensions of a 4D torch.Tensor."""
@@ -324,7 +318,6 @@ class TestCropAndPadND(unittest.TestCase):
         self.assertEqual(cropped_patch.shape, (5, 5, 7, 5))
         torch.testing.assert_close(cropped_patch, self.image_torch[:, 1:6, 2:9, 3:8])
 
-
     def test_all_dimensions_crop_torch(self):
         """Test cropping all dimensions of a 4D torch.Tensor."""
         bbox = [[1, 4], [2, 7], [0, 6], [4, 9]]
@@ -333,6 +326,26 @@ class TestCropAndPadND(unittest.TestCase):
         # Expected shape with all dimensions cropped as per bbox
         self.assertEqual(cropped_patch.shape, (3, 5, 6, 5))
         torch.testing.assert_close(cropped_patch, self.image_torch[1:4, 2:7, 0:6, 4:9])
+
+    def test_pad_all_dims(self):
+        seg = np.ones((128, 128))
+        bbox = [[-5, 133], [-5, 133]]
+        out = crop_and_pad_nd(seg, bbox)
+        self.assertEqual(out.shape, (138, 138))
+        bbox_reverse = [[5, 133], [5, 133]]
+        out2 = crop_and_pad_nd(out, bbox_reverse)
+        self.assertEqual(out2.shape, (128, 128))
+        self.assertTrue(np.all(out2==1))
+
+    def test_pad_all_dims_torch(self):
+        seg = torch.ones((128, 128))
+        bbox = [[-5, 133], [-5, 133]]
+        out = crop_and_pad_nd(seg, bbox)
+        self.assertEqual(out.shape, (138, 138))
+        bbox_reverse = [[5, 133], [5, 133]]
+        out2 = crop_and_pad_nd(out, bbox_reverse)
+        self.assertEqual(out2.shape, (128, 128))
+        self.assertTrue(torch.all(out2==1))
 
 
 if __name__ == "__main__":

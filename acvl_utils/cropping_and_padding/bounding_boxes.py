@@ -11,7 +11,57 @@ import torch.nn.functional as F
 def pad_bbox(bounding_box: Union[List[List[int]], Tuple[Tuple[int, int]]], pad_amount: Union[int, List[int]],
              array_shape: Tuple[int, ...] = None) -> List[List[int]]:
     """
+    Pads a bounding box by a specified amount and optionally ensures that it stays within the bounds of an array.
 
+    Parameters:
+    -----------
+    bounding_box : Union[List[List[int]], Tuple[Tuple[int, int]]]
+        The input bounding box, represented as a list or tuple of coordinate pairs. Each pair corresponds to
+        one dimension and should have the form `[start, end]`, where `start` is inclusive and `end` is exclusive.
+
+    pad_amount : Union[int, List[int]]
+        The amount of padding to apply to each dimension of the bounding box.
+        - If an integer is provided, the same padding is applied to all dimensions.
+        - If a list is provided, each element specifies the padding for the corresponding dimension.
+
+    array_shape : Tuple[int, ...], optional
+        The shape of the array to which the bounding box is applied.
+        If provided, the padded bounding box will be clipped to stay within these bounds.
+
+    Returns:
+    --------
+    List[List[int]]
+        A new bounding box with the specified padding applied. Each dimension will be represented as a pair `[start, end]`.
+
+    Notes:
+    ------
+    - The input `bounding_box` is converted to a list to ensure it can be modified without affecting the original data.
+    - The padding is applied symmetrically, reducing the `start` coordinate and increasing the `end` coordinate.
+    - If `array_shape` is provided, the padded bounding box will not exceed the valid indices of the array.
+
+    Examples:
+    ---------
+    1. Padding a bounding box without array shape constraints:
+       ```python
+       bbox = [[2, 10], [5, 15]]
+       padded_bbox = pad_bbox(bbox, pad_amount=2)
+       # Result: [[0, 12], [3, 17]]
+       ```
+
+    2. Padding with array shape constraints:
+       ```python
+       bbox = [[2, 10], [5, 15]]
+       array_shape = (12, 20)
+       padded_bbox = pad_bbox(bbox, pad_amount=2, array_shape=array_shape)
+       # Result: [[0, 12], [3, 17]]
+       ```
+
+    3. Using dimension-specific padding:
+       ```python
+       bbox = [[2, 10], [5, 15]]
+       padded_bbox = pad_bbox(bbox, pad_amount=[3, 1])
+       # Result: [[0, 13], [4, 16]]
+       ```
     """
     if isinstance(bounding_box, tuple):
         # convert to list
@@ -41,10 +91,26 @@ def regionprops_bbox_to_proper_bbox(regionprops_bbox: Tuple[int, ...]) -> List[L
 
 
 def bounding_box_to_slice(bounding_box: List[List[int]]):
+    """
+    ALL bounding boxes in acvl_utils and nnU-Netv2 are half open interval [start, end)!
+    - Alignment with Python Slicing
+    - Ease of Subdivision
+    - Consistency in Multi-Dimensional Arrays
+    - Precedent in Computer Graphics
+    https://chatgpt.com/share/679203ec-3fbc-8013-a003-13a7adfb1e73
+    """
     return tuple([slice(*i) for i in bounding_box])
 
 
 def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
+    """
+    ALL bounding boxes in acvl_utils and nnU-Netv2 are half open interval [start, end)!
+    - Alignment with Python Slicing
+    - Ease of Subdivision
+    - Consistency in Multi-Dimensional Arrays
+    - Precedent in Computer Graphics
+    https://chatgpt.com/share/679203ec-3fbc-8013-a003-13a7adfb1e73
+    """
     assert len(bounding_box) == len(array.shape), f"Dimensionality of bbox and array do not match. bbox has length " \
                                           f"{len(bounding_box)} while array has dimension {len(array.shape)}"
     slicer = bounding_box_to_slice(bounding_box)
@@ -53,10 +119,15 @@ def crop_to_bbox(array: np.ndarray, bounding_box: List[List[int]]):
 
 def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
     """
+    ALL bounding boxes in acvl_utils and nnU-Netv2 are half open interval [start, end)!
+    - Alignment with Python Slicing
+    - Ease of Subdivision
+    - Consistency in Multi-Dimensional Arrays
+    - Precedent in Computer Graphics
+    https://chatgpt.com/share/679203ec-3fbc-8013-a003-13a7adfb1e73
+
     this implementation uses less ram than the np.where one and is faster as well IF we expect the bounding box to
     be close to the image size. If it's not it's likely slower!
-    
-    bbox is returned so that you can just do slice(minzidx, maxzidx) to retrieve the object of interest with nothing cut off
 
     :param mask:
     :param outside_value:
@@ -97,6 +168,14 @@ def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
 
 
 def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
+    """
+    ALL bounding boxes in acvl_utils and nnU-Netv2 are half open interval [start, end)!
+    - Alignment with Python Slicing
+    - Ease of Subdivision
+    - Consistency in Multi-Dimensional Arrays
+    - Precedent in Computer Graphics
+    https://chatgpt.com/share/679203ec-3fbc-8013-a003-13a7adfb1e73
+    """
     where = np.array(np.where(mask))
     mins = np.min(where, 1)
     maxs = np.max(where, 1) + 1
@@ -106,62 +185,33 @@ def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
 def crop_and_pad_nd(
         image: Union[torch.Tensor, np.ndarray, blosc2.ndarray.NDArray],
         bbox: List[List[int]],
-        pad_value = 0,
+        pad_value=0,
         pad_mode: str = 'constant'
 ) -> Union[torch.Tensor, np.ndarray]:
     """
-    Crops a bounding box directly specified by bbox, INCLUDING the upper bound.
+    Crops a bounding box directly specified by bbox, adhering to the half-open interval [start, end).
     If the bounding box extends beyond the image boundaries, the cropped area is padded
     to maintain the desired size. Initial dimensions not included in bbox remain unaffected.
 
-    Pad modes for torch:
-    'constant', 'reflect', 'replicate' or 'circular'
-
-    Pad modes for numpy
-       'constant' (default)
-            Pads with a constant value.
-        'edge'
-            Pads with the edge values of array.
-        'linear_ramp'
-            Pads with the linear ramp between end_value and the
-            array edge value.
-        'maximum'
-            Pads with the maximum value of all or part of the
-            vector along each axis.
-        'mean'
-            Pads with the mean value of all or part of the
-            vector along each axis.
-        'median'
-            Pads with the median value of all or part of the
-            vector along each axis.
-        'minimum'
-            Pads with the minimum value of all or part of the
-            vector along each axis.
-        'reflect'
-            Pads with the reflection of the vector mirrored on
-            the first and last values of the vector along each
-            axis.
-        'symmetric'
-            Pads with the reflection of the vector mirrored
-            along the edge of the array.
-        'wrap'
-            Pads with the wrap of the vector along the axis.
-            The first values are used to pad the end and the
-            end values are used to pad the beginning.
-        'empty'
-            Pads with undefined values.
-
-    We only support constant, reflect and replicate/edge
+    ALL bounding boxes in acvl_utils and nnU-Netv2 are half open interval [start, end)!
+    - Alignment with Python Slicing
+    - Ease of Subdivision
+    - Consistency in Multi-Dimensional Arrays
+    - Precedent in Computer Graphics
+    https://chatgpt.com/share/679203ec-3fbc-8013-a003-13a7adfb1e73
 
     Parameters:
-    - image: N-dimensional torch.Tensor or np.ndarray representing the image
+    - image: N-dimensional torch.Tensor, np.ndarray, or blosc2.ndarray.NDArray representing the image.
     - bbox: List of [[dim_min, dim_max], ...] defining the bounding box for the last dimensions.
+            Each dimension follows the half-open interval [start, end).
+    - pad_value: Value used for padding when bbox extends beyond image boundaries.
+    - pad_mode: Padding mode, one of 'constant', 'reflect', or 'replicate' (alias for 'edge').
 
     Returns:
     - Cropped and padded patch of the requested bounding box size, as the same type as `image`.
     """
 
-    assert pad_mode in ['constant', 'reflect', 'replicate', 'edge']
+    assert pad_mode in ['constant', 'reflect', 'replicate', 'edge'], "Unsupported pad_mode."
 
     # Determine the number of dimensions to crop based on bbox
     crop_dims = len(bbox)
@@ -172,7 +222,7 @@ def crop_and_pad_nd(
     slices = []
     padding = []
     output_shape = list(img_shape[:num_dims - crop_dims])  # Initial dimensions remain as in the original image
-    target_shape = output_shape + [max_val - min_val for min_val, max_val in bbox]
+    target_shape = output_shape + [max_val - min_val for min_val, max_val in bbox]  # Half-open interval
 
     # Iterate through dimensions, applying bbox to the last `crop_dims` dimensions
     for i in range(num_dims):
@@ -180,13 +230,13 @@ def crop_and_pad_nd(
             # For initial dimensions not covered by bbox, include the entire dimension
             slices.append(slice(None))
             padding.append([0, 0])
-            output_shape.append(img_shape[i])  # Keep the initial dimensions as they are
+            output_shape.append(img_shape[i])
         else:
             # For dimensions specified in bbox, directly use the min and max bounds
             dim_idx = i - (num_dims - crop_dims)  # Index within bbox
 
             min_val = bbox[dim_idx][0]
-            max_val = bbox[dim_idx][1]
+            max_val = bbox[dim_idx][1]  # This is exclusive by definition
 
             # Check if the bounding box is completely outside the image bounds
             if max_val <= 0 or min_val >= img_shape[i]:
@@ -196,9 +246,9 @@ def crop_and_pad_nd(
                 elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
                     return np.zeros(target_shape, dtype=image.dtype)
 
-            # Calculate valid cropping ranges within image bounds, excluding the upper bound
+            # Calculate valid cropping ranges within image bounds (half-open interval)
             valid_min = max(min_val, 0)
-            valid_max = min(max_val, img_shape[i])  # Exclude upper bound by using max_val directly
+            valid_max = min(max_val, img_shape[i])  # Exclusive upper bound
             slices.append(slice(valid_min, valid_max))
 
             # Calculate padding needed for this dimension
@@ -216,9 +266,7 @@ def crop_and_pad_nd(
     if isinstance(image, torch.Tensor):
         if pad_mode == 'edge':
             pad_mode = 'replicate'
-            # torch is stupid (NotImplementedError: Only 2D, 3D, 4D, 5D padding with non-constant padding are supported for now)
-            # it wants a 4d tensor to do 2d padding
-            cropped = cropped[None, None]
+            cropped = cropped[None, None]  # Adjust shape for PyTorch padding requirements
         flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
         padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
         if pad_mode == 'replicate':
@@ -226,8 +274,12 @@ def crop_and_pad_nd(
     elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
         if pad_mode == 'replicate':
             pad_mode = 'edge'
+        if pad_mode == 'edge':
+            kwargs = {}
+        else:
+            kwargs = {'constant_values': pad_value}
         pad_width = [(p[0], p[1]) for p in padding]
-        padded_cropped = np.pad(cropped, pad_width=pad_width, mode='constant', constant_values=pad_value)
+        padded_cropped = np.pad(cropped, pad_width=pad_width, mode=pad_mode, **kwargs)
     else:
         raise ValueError(f'Unsupported image type {type(image)}')
 
