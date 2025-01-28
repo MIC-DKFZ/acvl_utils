@@ -263,25 +263,28 @@ def crop_and_pad_nd(
     cropped = image[tuple(slices)]
 
     # Apply padding to the cropped patch
-    if isinstance(image, torch.Tensor):
-        if pad_mode == 'edge':
-            pad_mode = 'replicate'
-            cropped = cropped[None, None]  # Adjust shape for PyTorch padding requirements
-        flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
-        padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
-        if pad_mode == 'replicate':
-            padded_cropped = padded_cropped[0, 0]
-    elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
-        if pad_mode == 'replicate':
-            pad_mode = 'edge'
-        if pad_mode == 'edge':
-            kwargs = {}
+    if np.any(padding):
+        if isinstance(image, torch.Tensor):
+            if pad_mode == 'edge':
+                pad_mode = 'replicate'
+                cropped = cropped[None, None]  # Adjust shape for PyTorch padding requirements
+            flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
+            padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
+            if pad_mode == 'replicate':
+                padded_cropped = padded_cropped[0, 0]
+        elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
+            if pad_mode == 'replicate':
+                pad_mode = 'edge'
+            if pad_mode == 'edge':
+                kwargs = {}
+            else:
+                kwargs = {'constant_values': pad_value}
+            pad_width = [(p[0], p[1]) for p in padding]
+            padded_cropped = np.pad(cropped, pad_width=pad_width, mode=pad_mode, **kwargs)
         else:
-            kwargs = {'constant_values': pad_value}
-        pad_width = [(p[0], p[1]) for p in padding]
-        padded_cropped = np.pad(cropped, pad_width=pad_width, mode=pad_mode, **kwargs)
+            raise ValueError(f'Unsupported image type {type(image)}')
     else:
-        raise ValueError(f'Unsupported image type {type(image)}')
+        padded_cropped = cropped
 
     return padded_cropped
 
