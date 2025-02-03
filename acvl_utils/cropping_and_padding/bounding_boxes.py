@@ -213,6 +213,9 @@ def crop_and_pad_nd(
 
     assert pad_mode in ['constant', 'reflect', 'replicate', 'edge'], "Unsupported pad_mode."
 
+    # make sure bounding boxes are int and not uint. Otherwise we may get underflow
+    bbox = [[int(i) for i in j] for j in bbox]
+
     # Determine the number of dimensions to crop based on bbox
     crop_dims = len(bbox)
     img_shape = image.shape
@@ -307,6 +310,8 @@ def insert_crop_into_image(
     Returns:
     - image: The original image with the crop reinserted at the specified location (modified in-place).
     """
+    # make sure bounding boxes are int and not uint. Otherwise we may get underflow
+    bbox = [[int(i) for i in j] for j in bbox]
 
     # Ensure that bbox only applies to the last len(bbox) dimensions of crop and image
     num_dims = len(image.shape)
