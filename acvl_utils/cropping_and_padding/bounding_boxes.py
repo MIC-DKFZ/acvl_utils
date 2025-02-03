@@ -167,6 +167,13 @@ def get_bbox_from_mask(mask: np.ndarray) -> List[List[int]]:
     return [[minzidx, maxzidx], [minxidx, maxxidx], [minyidx, maxyidx]]
 
 
+def int_bbox(bbox):
+    bbox2 = [[int(i) for i in row] for row in bbox]  # Convert all values to int
+    if bbox2 != bbox:  # Directly compare the original and casted versions
+        raise RuntimeError(f"Invalid bbox encountered. Cannot be safely cast to int: {bbox}. Casting result: {bbox2}")
+    return bbox2
+
+
 def get_bbox_from_mask_npwhere(mask: np.ndarray) -> List[List[int]]:
     """
     ALL bounding boxes in acvl_utils and nnU-Netv2 are half open interval [start, end)!
@@ -214,7 +221,7 @@ def crop_and_pad_nd(
     assert pad_mode in ['constant', 'reflect', 'replicate', 'edge'], "Unsupported pad_mode."
 
     # make sure bounding boxes are int and not uint. Otherwise we may get underflow
-    bbox = [[int(i) for i in j] for j in bbox]
+    bbox = int_bbox(bbox)
 
     # Determine the number of dimensions to crop based on bbox
     crop_dims = len(bbox)
@@ -311,7 +318,7 @@ def insert_crop_into_image(
     - image: The original image with the crop reinserted at the specified location (modified in-place).
     """
     # make sure bounding boxes are int and not uint. Otherwise we may get underflow
-    bbox = [[int(i) for i in j] for j in bbox]
+    bbox = int_bbox(bbox)
 
     # Ensure that bbox only applies to the last len(bbox) dimensions of crop and image
     num_dims = len(image.shape)
