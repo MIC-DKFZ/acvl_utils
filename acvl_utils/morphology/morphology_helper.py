@@ -2,20 +2,24 @@ from typing import Union, Tuple, List, Callable, Dict
 
 import numpy as np
 from skimage.measure import label
-from skimage.morphology import ball
+from skimage.morphology import ball, disk
 from skimage.transform import resize
 import cc3d
 
 
-def generate_ball(radius: Union[Tuple, List], spacing: Union[Tuple, List] = (1, 1, 1), dtype=np.uint8) -> np.ndarray:
+def generate_ball(radius: Union[Tuple, List], spacing: Union[Tuple, List] = None, dtype=np.uint8) -> np.ndarray:
     """
     Returns a ball/ellipsoid corresponding to the specified size (radius = list/tuple of len 3 with one radius per axis)
     If you use spacing, both radius and spacing will be interpreted relative to each other, so a radius of 10 with a
     spacing of 5 will result in a ball with radius 2 pixels.
     """
-    radius_in_voxels = np.array([round(i) for i in radius / np.array(spacing)])
+    if spacing is None:
+        spacing = [1] * len(radius)
+    radius_in_voxels = np.array([round(i) for i in radius]) / np.array(spacing)
+    if all([i == radius_in_voxels[0] for i in radius_in_voxels[1:]]):
+        return ball(radius_in_voxels[0]) if len(radius) == 3 else disk(radius_in_voxels[0])
     n = 2 * radius_in_voxels + 1
-    ball_iso = ball(max(n) * 2, dtype=np.float64)
+    ball_iso = ball(max(n) * 2, dtype=np.float64) if len(radius) == 3 else disk(max(n) * 2, dtype=np.float64)
     ball_resampled = resize(ball_iso, n, 1, 'constant', 0, clip=True, anti_aliasing=False, preserve_range=True)
     ball_resampled[ball_resampled > 0.5] = 1
     ball_resampled[ball_resampled <= 0.5] = 0
