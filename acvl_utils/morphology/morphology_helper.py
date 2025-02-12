@@ -63,6 +63,14 @@ def remove_all_but_largest_component(binary_image: np.ndarray, connectivity: int
     return generic_filter_components(binary_image, filter_fn, connectivity)
 
 
+def remove_all_but_largest_component_cc3d(binary_image: np.ndarray, connectivity: int = None) -> np.ndarray:
+    """
+    Removes all but the largest component in binary_image. Replaces pixels that don't belong to it with background_label
+    """
+    filter_fn = lambda x, y: [i for i, j in zip(x, y) if j == max(y)]
+    return generic_filter_components_cc3d(binary_image, filter_fn, connectivity)
+
+
 def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[List[int], List[int]], List[int]],
                               connectivity: int = None):
     """
@@ -72,6 +80,17 @@ def generic_filter_components(binary_image: np.ndarray, filter_fn: Callable[[Lis
     returns a binary array that is True where the filtered components are
     """
     labeled_image, component_sizes = label_with_component_sizes(binary_image, connectivity)
+    component_ids = list(component_sizes.keys())
+    component_sizes = list(component_sizes.values())
+    keep = filter_fn(component_ids, component_sizes)
+    return np.isin(labeled_image.ravel(), keep).reshape(labeled_image.shape)
+
+
+def generic_filter_components_cc3d(binary_image: np.ndarray, filter_fn: Callable[[List[int], List[int]], List[int]],
+                              connectivity: int = None):
+    """
+    """
+    labeled_image, component_sizes = cc3d_label_with_component_sizes(binary_image, connectivity)
     component_ids = list(component_sizes.keys())
     component_sizes = list(component_sizes.values())
     keep = filter_fn(component_ids, component_sizes)
@@ -167,6 +186,7 @@ def remove_components_cc3d(binary_image: np.ndarray, threshold_size_in_pixels: i
     keep = np.isin(components, labels_to_keep).astype(binary_image.dtype).reshape(binary_image.shape)
 
     return keep
+
 
 
 if __name__ == '__main__':

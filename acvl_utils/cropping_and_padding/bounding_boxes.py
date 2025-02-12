@@ -285,7 +285,7 @@ def crop_and_pad_nd(
         elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
             if pad_mode == 'replicate':
                 pad_mode = 'edge'
-            if pad_mode == 'edge':
+            if pad_mode == 'edge' or pad_mode == 'reflect':
                 kwargs = {}
             else:
                 kwargs = {'constant_values': pad_value}
