@@ -283,7 +283,7 @@ def crop_and_pad_nd(
     if np.any(padding):
         # torch will not allow reflection padding if the amount of padding exceeds the shape in that dimension. Numpy will happily do that. I am annoyed. Implement a numpy fallback for that
         was_torch = False
-        if pad_mode == 'reflect' and isinstance(image, torch.Tensor):
+        if allow_hacky_np_workaround_for_reflect and pad_mode == 'reflect' and isinstance(image, torch.Tensor):
             for d in range(-len(padding), 0):
                 if max(padding[d]) < cropped.shape[d]:
                     device = cropped.device
@@ -314,7 +314,15 @@ def crop_and_pad_nd(
                     padding = padding[1:]
                 # if n_fake_dims < 0 tensor_dim > padding_dims+2 and stuff may fail
             flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
-            padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
+            try:
+                padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
+            except Exception as e:
+                print('Failed torch pad')
+                print('image shape', img_shape)
+                print('bbox', bbox)
+                print('pad mode', pad_mode)
+                raise e
+
             if pad_mode in ['replicate', 'reflect'] and n_fake_dims > 0:
                 for i in range(n_fake_dims):
                     padded_cropped.squeeze_(0)
