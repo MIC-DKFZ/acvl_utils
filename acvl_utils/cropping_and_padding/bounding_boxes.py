@@ -303,16 +303,20 @@ def crop_and_pad_nd(
                 # wonky workaround that may work, or not. Adding fake dimension. This is fiddly because our
                 # image/cropped may have more dimensions than we want to pad and may even have too many dimensions for
                 # torch to be happy
-                padding_dims = len(bbox)
-                tensor_dim = cropped.ndim
-                n_fake_dims = padding_dims + 2 - tensor_dim
+
+                # ok so pytorch works most reliably if the length of the padding is 2 less than the ndim of cropped
+                while padding[0] == [0, 0] and len(padding) > cropped.ndim - 2:
+                    padding = padding[1:]
+                # now check whether cropped.ndim is too small
+                n_fake_dims = len(padding) + 2 - cropped.ndim
                 if n_fake_dims > 0:
                     for i in range(n_fake_dims):
                         cropped.unsqueeze_(0)
-                # we also need to remove any leading [0, 0] paddings because torch doesn't understand that this dimension is not supposed to be padded
-                while padding[0] == [0, 0] and len(padding) > 2: # 1d Padding also crashes. I am losing my mind here...
-                    padding = padding[1:]
-                # if n_fake_dims < 0 tensor_dim > padding_dims+2 and stuff may fail
+                # check if we need to add fake padding
+                while len(padding) < cropped.ndim - 2:
+                    padding = [0, 0] + padding
+                assert cropped.ndim < 6, 'Torch padding with replicate/reflect works with 3D images at most'
+
             flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
             try:
                 padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
@@ -324,6 +328,8 @@ def crop_and_pad_nd(
                 print('flattened_padding', flattened_padding)
                 print('pad mode', pad_mode)
                 print('pad value', pad_value)
+                print('image shape', img_shape)
+                print('bbox', bbox)
                 raise e
 
             if pad_mode in ['replicate', 'reflect'] and n_fake_dims > 0:
@@ -434,11 +440,21 @@ if __name__ == '__main__':
     # slicer = bounding_box_to_slice(bbox_padded)
 
     # Failed torch pad
-    # image shape torch.Size([192, 192, 192])
-    # bbox [[70, 179], [65, 139], [53, 195]]
+    # cropped torch.Size([1, 1, 112, 100, 149])
+    # cropped device cpu
+    # cropped type torch.uint8
+    # flattened_padding [6, 0, 0, 0]
     # pad mode replicate
+    # pad value 0
 
 
-    image = torch.tensor((192, 192, 192), device='cuda')
-    bbox = [[55, 156], [-3, 112], [18, 197]]
-    out = crop_and_pad_nd(image, bbox, pad_mode='replicate')
+    # cropped = torch.ones((1, 1, 112, 100, 149), dtype=torch.uint8, device='cpu')
+    # pad_mode = 'replicate'
+    # flattened_padding = [0, 0, 6, 0, 0, 0]
+    # pad_value = 0
+    # padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
+
+    image = torch.rand((1, 192, 192, 192))
+    bbox = [[0, 195], [-1, 204], [-1, 192]]
+    ret = crop_and_pad_nd(image, bbox, pad_mode='replicate')
+    print(ret.shape)
