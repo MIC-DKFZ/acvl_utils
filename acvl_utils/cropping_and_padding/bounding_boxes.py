@@ -318,9 +318,12 @@ def crop_and_pad_nd(
                 padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
             except Exception as e:
                 print('Failed torch pad')
-                print('image shape', img_shape)
-                print('bbox', bbox)
+                print('cropped', cropped.shape)
+                print('cropped device', cropped.device)
+                print('cropped type', cropped.dtype)
+                print('flattened_padding', flattened_padding)
                 print('pad mode', pad_mode)
+                print('pad value', pad_value)
                 raise e
 
             if pad_mode in ['replicate', 'reflect'] and n_fake_dims > 0:
@@ -426,6 +429,16 @@ def insert_crop_into_image(
 
 
 if __name__ == '__main__':
-    bbox = [[32, 64], [21, 46]]
-    bbox_padded = pad_bbox(bbox, 3)
-    slicer = bounding_box_to_slice(bbox_padded)
+    # bbox = [[32, 64], [21, 46]]
+    # bbox_padded = pad_bbox(bbox, 3)
+    # slicer = bounding_box_to_slice(bbox_padded)
+
+    # Failed torch pad
+    # image shape torch.Size([192, 192, 192])
+    # bbox [[70, 179], [65, 139], [53, 195]]
+    # pad mode replicate
+
+
+    image = torch.tensor((192, 192, 192), device='cuda')
+    bbox = [[55, 156], [-3, 112], [18, 197]]
+    out = crop_and_pad_nd(image, bbox, pad_mode='replicate')
