@@ -292,48 +292,45 @@ def crop_and_pad_nd(
                     print('used numpy workaround')
                     break
 
-        try:
-            if isinstance(cropped, torch.Tensor):
-                if pad_mode == 'edge':
-                    pad_mode = 'replicate'
-                if pad_mode in ['replicate', 'reflect']:
-                    # pytorch is weird: https://github.com/pytorch/pytorch/issues/147506
-                    # getting NotImplementedError: Only 2D, 3D, 4D, 5D padding with non-constant padding are supported for now
+        if isinstance(cropped, torch.Tensor):
+            if pad_mode == 'edge':
+                pad_mode = 'replicate'
+            if pad_mode in ['replicate', 'reflect']:
+                # pytorch is weird: https://github.com/pytorch/pytorch/issues/147506
+                # getting NotImplementedError: Only 2D, 3D, 4D, 5D padding with non-constant padding are supported for now
 
-                    # when padding a 2d array because batch/color channel are expected. This is not documented.
-                    # wonky workaround that may work, or not. Adding fake dimension. This is fiddly because our
-                    # image/cropped may have more dimensions than we want to pad and may even have too many dimensions for
-                    # torch to be happy
-                    padding_dims = len(bbox)
-                    tensor_dim = cropped.ndim
-                    n_fake_dims = padding_dims + 2 - tensor_dim
-                    if n_fake_dims > 0:
-                        for i in range(n_fake_dims):
-                            cropped.unsqueeze_(0)
-                    # we also need to remove any leading [0, 0] paddings because torch doesn't understand that this dimension is not supposed to be padded
-                    while padding[0] == [0, 0] and len(padding) > 2: # 1d Padding also crashes. I am losing my mind here...
-                        padding = padding[1:]
-                    # if n_fake_dims < 0 tensor_dim > padding_dims+2 and stuff may fail
-                flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
-                padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
-                if pad_mode in ['replicate', 'reflect'] and n_fake_dims > 0:
+                # when padding a 2d array because batch/color channel are expected. This is not documented.
+                # wonky workaround that may work, or not. Adding fake dimension. This is fiddly because our
+                # image/cropped may have more dimensions than we want to pad and may even have too many dimensions for
+                # torch to be happy
+                padding_dims = len(bbox)
+                tensor_dim = cropped.ndim
+                n_fake_dims = padding_dims + 2 - tensor_dim
+                if n_fake_dims > 0:
                     for i in range(n_fake_dims):
-                        padded_cropped.squeeze_(0)
-            elif isinstance(cropped, (np.ndarray, blosc2.ndarray.NDArray)):
-                if pad_mode == 'replicate':
-                    pad_mode = 'edge'
-                if pad_mode == 'edge' or pad_mode == 'reflect':
-                    kwargs = {}
-                else:
-                    kwargs = {'constant_values': pad_value}
-                pad_width = [(p[0], p[1]) for p in padding]
-                padded_cropped = np.pad(cropped, pad_width=pad_width, mode=pad_mode, **kwargs)
-                if was_torch:
-                    padded_cropped = torch.from_numpy(padded_cropped).to(device)
+                        cropped.unsqueeze_(0)
+                # we also need to remove any leading [0, 0] paddings because torch doesn't understand that this dimension is not supposed to be padded
+                while padding[0] == [0, 0] and len(padding) > 2: # 1d Padding also crashes. I am losing my mind here...
+                    padding = padding[1:]
+                # if n_fake_dims < 0 tensor_dim > padding_dims+2 and stuff may fail
+            flattened_padding = [p for sublist in reversed(padding) for p in sublist]  # Flatten in reverse order for PyTorch
+            padded_cropped = F.pad(cropped, flattened_padding, mode=pad_mode, value=pad_value)
+            if pad_mode in ['replicate', 'reflect'] and n_fake_dims > 0:
+                for i in range(n_fake_dims):
+                    padded_cropped.squeeze_(0)
+        elif isinstance(cropped, (np.ndarray, blosc2.ndarray.NDArray)):
+            if pad_mode == 'replicate':
+                pad_mode = 'edge'
+            if pad_mode == 'edge' or pad_mode == 'reflect':
+                kwargs = {}
             else:
-                raise ValueError(f'Unsupported image type {type(image)}')
-        except Exception as e:
-            import IPython;IPython.embed()
+                kwargs = {'constant_values': pad_value}
+            pad_width = [(p[0], p[1]) for p in padding]
+            padded_cropped = np.pad(cropped, pad_width=pad_width, mode=pad_mode, **kwargs)
+            if was_torch:
+                padded_cropped = torch.from_numpy(padded_cropped).to(device)
+        else:
+            raise ValueError(f'Unsupported image type {type(image)}')
     else:
         padded_cropped = cropped
 

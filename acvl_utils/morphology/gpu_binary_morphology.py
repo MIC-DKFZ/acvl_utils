@@ -111,9 +111,9 @@ if __name__ == '__main__':
     # inp[10:100, 50:100, 100:120] = True
     # selem = generate_ball((7, 7, 7))
 
-    inp = np.zeros((160, 2560, 2160), dtype=bool)
+    inp = np.zeros((600, 600, 600), dtype=bool)
     inp[200:300, 200:300, 100:200] = True
-    selem = generate_ball((5, 5, 3))
+    selem = generate_ball((5, 5, 5))
 
     # one dry run for warmup
     _ = gpu_binary_dilation(inp, selem)
@@ -141,5 +141,4 @@ if __name__ == '__main__':
     print(f'Erosion: CPU: {time_skimage}s')
 
     assert np.all(output_gpu == ref)
-
 
