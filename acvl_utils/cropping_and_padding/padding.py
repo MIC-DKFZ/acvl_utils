@@ -93,6 +93,8 @@ def pad_nd_image(image: Union[torch.Tensor, np.ndarray], new_shape: Tuple[int, .
             # torch padding has the weirdest interface ever. Like wtf? Y u no read numpy documentation? So much easier
             torch_pad_list = [i for j in pad_list for i in j[::-1]][::-1]
             res = F.pad(image, torch_pad_list, mode, **kwargs)
+        else:
+            raise RuntimeError(f"Unsupported image type: {type(image)}. Expecting numpy.ndarray or torch.Tensor")
     else:
         res = image
 
