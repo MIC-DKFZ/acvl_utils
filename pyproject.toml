@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "acvl_utils"
+version = "0.2.6"
+description = "Super cool utilities that we just love to use"
+readme = "README.md"
+authors = [
+  {name = "Applied Computer Vision Lab, Helmholtz Imaging & Division of Medical Image Computing, German Cancer Research Center", email = "f.isensee@dkfz.de"},
+]
+license = "Apache-2.0"
+license-files = ["LICENCE"]
+dependencies = [
+  "numpy",
+  "batchgenerators",
+  "torch",
+  "SimpleITK",
+  "scikit-image",
+  "connected-components-3d",
+  "blosc2>=3.0.0b4",
+]
+
+[tool.setuptools.packages.find]
+include = ["acvl_utils*"]

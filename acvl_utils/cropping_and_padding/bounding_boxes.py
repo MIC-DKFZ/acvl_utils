@@ -194,7 +194,8 @@ def crop_and_pad_nd(
         bbox: List[List[int]],
         pad_value=0,
         pad_mode: str = 'constant',
-        allow_hacky_np_workaround_for_reflect: bool = True
+        allow_hacky_np_workaround_for_reflect: bool = True,
+        cast_cropped_to = None,
 ) -> Union[torch.Tensor, np.ndarray]:
     """
     Crops a bounding box directly specified by bbox, adhering to the half-open interval [start, end).
@@ -220,6 +221,8 @@ def crop_and_pad_nd(
     - pad_mode: Padding mode, one of 'constant', 'reflect', or 'replicate' (alias for 'edge').
     - allow_hacky_np_workaround_for_reflect: If True, will perform numpy workaround if torch.pad doesn't work. Only
     happening if pad_mode is 'reflect'
+    - cast_cropped_to: Cast the cropped image to this dtype. This needs to be a numpy dtype like np.float32 for blosc2
+    ndarrays and np.adarray. For torch this needs to be a torch dtype like torch.float32
 
     Returns:
     - Cropped and padded patch of the requested bounding box size, as the same type as `image`.
@@ -278,6 +281,13 @@ def crop_and_pad_nd(
 
     # Crop the valid part of the bounding box
     cropped = image[tuple(slices)]
+    if cast_cropped_to is not None:
+        if isinstance(cropped, torch.Tensor):
+            cropped = cropped.to(cast_cropped_to)
+        elif isinstance(cropped, (np.ndarray, blosc2.ndarray.NDArray)):
+            cropped = cropped[:].astype(cast_cropped_to, copy=False)
+        else:
+            raise ValueError(f'Unsupported image type {type(image)}')
 
     # Apply padding to the cropped patch
     if np.any(padding):
