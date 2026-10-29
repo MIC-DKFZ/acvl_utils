@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "acvl_utils"
-version = "0.2.6"
+version = "0.2.7"
 description = "Super cool utilities that we just love to use"
 readme = "README.md"
 authors = [
