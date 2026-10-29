@@ -8,6 +8,8 @@ name: Publish to PyPI
 # tag and pyproject version disagree, so you can't accidentally publish a
 # mismatched version.
 #
+# The tests (tests.yml) run first, and nothing is uploaded unless they pass.
+#
 # Authentication uses PyPI Trusted Publishing (OIDC) — no API token / secret is
 # stored in the repo. One-time PyPI setup: on pypi.org, project acvl-utils,
 # Manage -> Publishing, add a GitHub publisher with owner MIC-DKFZ, repository
@@ -21,8 +23,13 @@ on:
       - "v*"
 
 jobs:
+  tests:
+    name: Tests
+    uses: ./.github/workflows/tests.yml
+
   build-and-publish:
     name: Build and publish to PyPI
+    needs: tests
     runs-on: ubuntu-latest
     permissions:
       # Required for PyPI Trusted Publishing (OIDC). This is what lets the job
