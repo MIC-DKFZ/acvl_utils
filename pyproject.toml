@@ -20,6 +20,7 @@ dependencies = [
   "scikit-image",
   "connected-components-3d",
   "blosc2>=3.0.0b4",
+  "tqdm",
 ]
 
 [tool.setuptools.packages.find]
