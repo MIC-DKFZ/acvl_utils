@@ -1,5 +1,7 @@
+import tracemalloc
 import unittest
 
+import blosc2
 import numpy as np
 import torch
 
@@ -346,6 +348,40 @@ class TestCropAndPadND(unittest.TestCase):
         out2 = crop_and_pad_nd(out, bbox_reverse)
         self.assertEqual(out2.shape, (128, 128))
         self.assertTrue(torch.all(out2==1))
+
+
+class TestCropAndPadCastConstant(unittest.TestCase):
+    """numpy and blosc2 inputs with constant padding: one output array, cast and padded in one pass."""
+
+    def setUp(self):
+        self.seg = np.random.default_rng(0).integers(-1, 4, (2, 10, 12, 14)).astype(np.int8)
+        self.bbox = [[-3, 6], [4, 16], [-2, 9]]
+        self.expected = np.pad(self.seg[:, 0:6, 4:12, 0:9].astype(np.int16), [(0, 0), (3, 0), (0, 4), (2, 0)],
+                               constant_values=-1)
+
+    def test_cast_and_pad_np(self):
+        out = crop_and_pad_nd(self.seg, self.bbox, -1, cast_cropped_to=np.int16)
+        self.assertEqual(out.dtype, np.int16)
+        np.testing.assert_array_equal(out, self.expected)
+
+    def test_cast_and_pad_blosc2(self):
+        out = crop_and_pad_nd(blosc2.asarray(self.seg), self.bbox, -1, cast_cropped_to=np.int16)
+        self.assertEqual(out.dtype, np.int16)
+        np.testing.assert_array_equal(out, self.expected)
+
+    def test_cast_and_pad_allocates_only_the_output_np(self):
+        # casting the crop first and padding it afterwards allocated a second, cast copy of the crop
+        seg = np.zeros((1, 64, 64, 64), dtype=np.int8)
+        tracemalloc.start()
+        out = crop_and_pad_nd(seg, [[-8, 56], [0, 64], [0, 64]], -1, cast_cropped_to=np.int16)
+        _, peak = tracemalloc.get_traced_memory()
+        tracemalloc.stop()
+        self.assertLess(peak, 1.1 * out.nbytes)
+
+    def test_out_of_range_pad_value_wraps_like_np_pad(self):
+        img = np.arange(24, dtype=np.uint8).reshape(4, 6)
+        out = crop_and_pad_nd(img, [[-1, 3], [2, 8]], -1)
+        np.testing.assert_array_equal(out, np.pad(img[0:3, 2:6], [(1, 0), (0, 2)], constant_values=-1))
 
 
 if __name__ == "__main__":

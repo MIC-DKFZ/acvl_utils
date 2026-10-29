@@ -279,6 +279,22 @@ def crop_and_pad_nd(
             # Define the shape based on the bbox range in this dimension
             output_shape.append(max_val - min_val)
 
+    # numpy and blosc2 with constant padding: allocate the output once, in the target dtype, and write the crop into
+    # it (casting on the way). Casting the crop first and padding it afterwards would allocate and copy it twice.
+    # This is what np.pad does internally, so the result is identical
+    if pad_mode == 'constant' and np.any(padding) and np.ndim(pad_value) == 0 and \
+            isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
+        padded_cropped = np.empty(target_shape, dtype=cast_cropped_to if cast_cropped_to is not None else image.dtype)
+        padded_cropped[tuple(slice(b, s - a) for (b, a), s in zip(padding, target_shape))] = image[tuple(slices)]
+        # a numpy scalar like np.pad uses: -1 into uint8 then wraps around as it did there instead of raising
+        fill = np.asarray(pad_value)[()]
+        for d, (pad_before, pad_after) in enumerate(padding):
+            if pad_before > 0:
+                padded_cropped[(slice(None),) * d + (slice(None, pad_before),)] = fill
+            if pad_after > 0:
+                padded_cropped[(slice(None),) * d + (slice(target_shape[d] - pad_after, None),)] = fill
+        return padded_cropped
+
     # Crop the valid part of the bounding box
     cropped = image[tuple(slices)]
     if cast_cropped_to is not None:
