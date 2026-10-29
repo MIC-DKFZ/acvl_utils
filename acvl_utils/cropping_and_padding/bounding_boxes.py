@@ -260,11 +260,14 @@ def crop_and_pad_nd(
 
             # Check if the bounding box is completely outside the image bounds
             if max_val <= 0 or min_val >= img_shape[i]:
-                # If outside bounds, return an empty array or tensor of the target shape
+                # If outside bounds, the result is all padding: pad_value in the target dtype (0 for the other pad
+                # modes, there is nothing to replicate or reflect)
+                fill = pad_value if pad_mode == 'constant' else 0
+                dtype = cast_cropped_to if cast_cropped_to is not None else image.dtype
                 if isinstance(image, torch.Tensor):
-                    return torch.zeros(target_shape, dtype=image.dtype, device=image.device)
+                    return torch.full(target_shape, fill, dtype=dtype, device=image.device)
                 elif isinstance(image, (np.ndarray, blosc2.ndarray.NDArray)):
-                    return np.zeros(target_shape, dtype=image.dtype)
+                    return np.full(target_shape, np.asarray(fill), dtype=dtype)
 
             # Calculate valid cropping ranges within image bounds (half-open interval)
             valid_min = max(min_val, 0)

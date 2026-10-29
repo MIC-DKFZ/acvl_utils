@@ -378,6 +378,16 @@ class TestCropAndPadCastConstant(unittest.TestCase):
         tracemalloc.stop()
         self.assertLess(peak, 1.1 * out.nbytes)
 
+    def test_bbox_entirely_outside_is_all_padding(self):
+        out = crop_and_pad_nd(self.seg, [[20, 24], [0, 4], [3, 5]], -1, cast_cropped_to=np.int16)
+        self.assertEqual(out.dtype, np.int16)
+        np.testing.assert_array_equal(out, np.full((2, 4, 4, 2), -1, dtype=np.int16))
+        out = crop_and_pad_nd(blosc2.asarray(self.seg), [[-9, -1], [0, 4], [3, 5]], -1, cast_cropped_to=np.int16)
+        np.testing.assert_array_equal(out, np.full((2, 8, 4, 2), -1, dtype=np.int16))
+        out = crop_and_pad_nd(torch.from_numpy(self.seg), [[20, 24], [0, 4], [3, 5]], -1, cast_cropped_to=torch.int16)
+        self.assertEqual(out.dtype, torch.int16)
+        self.assertTrue(torch.all(out == -1))
+
     def test_out_of_range_pad_value_wraps_like_np_pad(self):
         img = np.arange(24, dtype=np.uint8).reshape(4, 6)
         out = crop_and_pad_nd(img, [[-1, 3], [2, 8]], -1)
